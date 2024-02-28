@@ -1,0 +1,123 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+ 
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+    
+\begin{document}
+
+\title{Het single-source shortest path probleem in grafen met negatieve gewichten}
+
+\author{\IEEEauthorblockN{Pieter Gerets}
+\IEEEauthorblockA{\textit{Universiteit Hasselt} \\
+Hasselt, Belgium \\
+pieter.gerets@student.uhasselt.be}
+}
+
+\maketitle
+
+\begin{abstract}
+Het vinden van het kortste pad waarbij dat de gewichten op de bogen van een graaf een positief gewicht hebben kan opgelost worden met bestaande algoritmen zoals Dijkstra die de theoretische limiet voor complexiteit raken. Voor grafen waarbij dat de gewichten mogelijks negatieve gewichten kunnen hebben op de bogen zitten we nog niet aan die theoretische limiet. In de afgelopen jaren zijn er wel een aantal grote sprongen gemaakt en die worden bestudeerd in deze paper.
+
+===
+This is a brief and self-contained summary of the contents of your paper. Mention what you did and report very briefly on the most important findings. You should see this as a 'teaser' for reading the entire document. Do not include references or citations, and make sure nothing in your text refers back to the abstract. Your entire paper is not allowed to exceed 10 pages in length, including figures and tables, but excluding references !
+====
+\end{abstract}
+
+\section{Introduction}
+the first section provides the context for your work and describes the structure. Be sure to formulate your most relevant research questions (also important for your poster !). Have a look at the guidelines for additional tips.
+
+\section{Positieve gewichten}
+
+
+\section{Some tips}
+
+\subsection{Inserting tables}
+
+Make sure your tables are legible and have decent aesthetics. Avoid the use of vertical lines if possible. More info can be found at the following link : \url{https://www.inf.ethz.ch/personal/markusp/teaching/guides/guide-tables.pdf}.
+
+\vspace{0.5cm}
+\begin{tabular}{llr}
+  \toprule
+  First name & Last Name & Grade \\
+  \midrule
+  John & Doe & $7.5$ \\
+  Richard & Miles & $2$ \\
+  \bottomrule
+  \end{tabular}
+
+  \vspace{0.5cm}
+
+  \begin{tabular}{llr}  
+    \toprule
+    \multicolumn{2}{c}{Item} \\
+    \cmidrule(r){1-2}
+    Animal    & Description & Price (\$) \\
+    \midrule
+    Gnat      & per gram    & 13.65      \\
+          &    each     & 0.01       \\
+    Gnu       & stuffed     & 92.50      \\
+    Emu       & stuffed     & 33.33      \\
+    Armadillo & frozen      & 8.99       \\
+    \bottomrule
+  \end{tabular}
+
+  
+\subsection{Inserting figures}
+
+When including figures or pictures, make sure that the quality is decent (don't upscale small and low-quality JPEG files). Preferably use vector formats for rescaling. If you copy something from another source, make sure that the original source is clearly referenced/cited. Charts and schematic overviews should be self-produced and not simply copy/pasted. Captions for figures need to be self-explanatory, so don't just mention 'screenhot' or 'chart' as a caption. You may also choose to include figures that span both columns, however be aware that this eats into your page allowance.
+
+\begin{figure}[tbp]
+\centerline{\includegraphics{fig1.png}}
+\caption{Example of a figure caption with some relevant explanations.}
+\label{fig}
+\end{figure}
+
+\section{Other tips}\label{othertips}
+
+\begin{itemize}
+\item Do not alter the layout of this document. You may include other packages if needed, but you may not mess with page margins, white spaces, fonts or font sizes. 
+\item Make sure that your sections all contain a decent amount of text. Do not go overboard in the number of sections and subsections. For a paper like this there should be no need for subsubsections. 
+\item Avoid 'lonely' sections, i.e. don't have a 3.1 if there is no 3.2 
+\item Proofread all text before handing in for review. Spelling and grammatical errors are easily discovered by human readers and tools, use them (and not the teaching team). 
+\item Cite all extern work you mention, see also below.
+\item If needed, you can subdivide the paper into multiple files. As long as it produces output consistent with this template.
+\item This template is based on the IEEEtran class. You can refer to the relevant documents for more information if needed (but this is typically not the case).
+
+\end{itemize}
+
+\section*{Conclusions}
+
+This section contains the conclusions about your work. It is not an abstract ! Mention your research questions and how you succeeded (or not) in answering them. Be self-critical and reflect upon your own work.
+
+\section*{Acknowledgments}
+
+Mention here the people that helped you with your work, but be brief (no more than 5-6 lines typically).
+
+\section*{References}
+
+Please number citations consecutively within brackets \cite{b1}. The 
+sentence punctuation follows the bracket \cite{b2}. Refer simply to the reference 
+number, as in \cite{b3}---do not use ``Ref. \cite{b3}'' or ``reference \cite{b3}'' except at 
+the beginning of a sentence: ``Reference \cite{b3} was the first $\ldots$''
+
+\begin{thebibliography}{00}
+
+\bibitem{b1} G. Eason, B. Noble, and I. N. Sneddon, ``On certain integrals of Lipschitz-Hankel type involving products of Bessel functions,'' Phil. Trans. Roy. Soc. London, vol. A247, pp. 529--551, April 1955.
+\bibitem{b2} J. Clerk Maxwell, A Treatise on Electricity and Magnetism, 3rd ed., vol. 2. Oxford: Clarendon, 1892, pp.68--73.
+\bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
+\bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
+\bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
+\bibitem{b6} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ``Electron spectroscopy studies on magneto-optical media and plastic substrate interface,'' IEEE Transl. J. Magn. Japan, vol. 2, pp. 740--741, August 1987 [Digests 9th Annual Conf. Magnetics Japan, p. 301, 1982].
+\bibitem{b7} M. Young, The Technical Writer's Handbook. Mill Valley, CA: University Science, 1989.
+\end{thebibliography}
+
+\end{document}
