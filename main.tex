@@ -1,135 +1,629 @@
 \documentclass[conference]{IEEEtran}
 
-\usepackage{cite}
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
 \usepackage{algorithmic}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{booktabs}
- 
+
+\usepackage{algorithm}
+\usepackage[dutch]{babel}
+\usepackage[backend=biber, style=ieee]{biblatex}
+\addbibresource{refs.bib}
+\usepackage{csquotes}
+\usepackage{dirtytalk}
+\usepackage{mathtools}
+%\usepackage{microtype}
+\usepackage{verbatim}
+
+
+\floatname{algorithm}{Procedure\!\!}
+\renewcommand{\thealgorithm}{}
+
+\newtheorem{theorem}{Stelling}[section]
+\newtheorem{lemma}{Lemma}[section]
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definitie}[section]
+\newtheorem{algorithmm}{Algoritme}[section]
+
+
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+
+\DeclarePairedDelimiter{\abs}{\vert}{\vert}  % Absolute waarde
+\DeclarePairedDelimiter{\card}{\vert}{\vert}  % Cardinaliteit
+
+\let \oldforall \forall
+\renewcommand{\forall}{\oldforall\,}
+
+\let \oldexists \exists
+\renewcommand{\exists}{\oldexists\,}
+
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
-    
+
 \begin{document}
 
-\title{Combinatorische optimalisatietechnieken voor het berekenen van kortste paden}
+\title{Algoritmen voor het berekenen van kortste paden}
 
 \author{\IEEEauthorblockN{Pieter Gerets}
 \IEEEauthorblockA{\textit{Universiteit Hasselt} \\
-Hasselt, Belgium \\
+Hasselt, België \\
 pieter.gerets@student.uhasselt.be}
 }
 
 \maketitle
+\pagestyle{plain}
 
 \begin{abstract}
-Het vinden van het kortste pad waarbij dat de gewichten op de bogen van een graaf een positief gewicht hebben kan opgelost worden met bestaande algoritmen zoals Dijkstra die de theoretische limiet voor complexiteit raken. Voor grafen waarbij dat de gewichten mogelijks negatieve gewichten kunnen hebben op de bogen zitten we nog niet aan die theoretische limiet. In de afgelopen jaren zijn er wel een aantal grote sprongen gemaakt en die worden bestudeerd in deze paper.
-
-===
-This is a brief and self-contained summary of the contents of your paper. Mention what you did and report very briefly on the most important findings. You should see this as a 'teaser' for reading the entire document. Do not include references or citations, and make sure nothing in your text refers back to the abstract. Your entire paper is not allowed to exceed 10 pages in length, including figures and tables, but excluding references !
-====
+Het vinden van het kortste pad waarbij dat de gewichten op de bogen van een graaf een positief gewicht hebben kan opgelost worden met bestaande algoritmen zoals Dijkstra. Net zoals het onderzoek voor grafen met positieve gewichten al lang geleden begonnen is, geldt dat ook voor grafen met negatieve gewichten. Het verschil met de positieve gewichten is dat de zoektocht naar efficiëntere algoritmen nog niet afgerond is. We moeten zelfs maar een paar jaar terug om nieuwere en betere algoritmen te vinden. In deze paper worden zowel enkele algoritmen voor grafen met strikt positieve gewichten, als voor grafen met mogelijk negatieve gewichten bestudeerd.
 \end{abstract}
 
-\section{Introduction}
-the first section provides the context for your work and describes the structure. Be sure to formulate your most relevant research questions (also important for your poster !). Have a look at the guidelines for additional tips.
+\section*{Introductie}
+De bekendste toepassing van het gebruik van kortste paden is het gps-systeem dat de snelste route van punt A naar punt B berekent. In deze toepassing zijn de gewichten enkel positief maar er zijn ook problemen waarbij het graafmodel ook negatieve gewichten kan hebben. Denk bijvoorbeeld aan het zoeken van de meest energiezuinige route voor een elektrische auto \cite{negatief}. Moderne elektrische auto's maken gebruik van recuperatief remmen dus bij een afdaling en bij het remmen wordt er energie gegeneerd in de plaats van gebruikt. In dit geval krijgen sommige bogen van de graaf een negatief gewicht. In financiële contexten moet je niet altijd geld uitgeven maar zijn er ook winsten en in spellen moet je niet altijd afgeven maar kan je ook een beloning of boost krijgen. In het algemeen bevat een graafmodel negatieve gewichten als het probleem niet alleen kosten maar ook beloningen heeft. In al deze toepassingen kan het nog steeds nuttig zijn te weten op welke manier je het minst aantal middelen verliest.
 
-\section{Positieve gewichten}
+Kortste pad algoritmen kunnen opgedeeld worden in drie verschillende categorieën op basis van input en output.
+\begin{enumerate}
+    \item Single-source, single-destination. De input is een graaf, een bronknoop en een eindknoop. De output is het kortste pad van de bronknoop naar de eindknoop. Voorbeeld: A* \cite{A*}.
+    \item Single-source, all-destination. Hier is de input een graaf en een bronknoop en de output geeft voor elke knoop het kortste pad naar elke andere knoop in de graaf. Voorbeelden zijn Dijkstra en Bellman-Ford, die we allebei bestuderen in deze paper.
+    \item All-source, all-destination. Hier is de input enkel een graaf. De output geeft een kortste pad tussen elk mogelijk paar van knopen. Voorbeelden zijn Floyd \cite{Floyd}, en Johnson \cite{Johnson}.
+\end{enumerate}
+De attente lezer merkt ongetwijfeld op dat er een categorie ontbreekt: `all-source, single-destination'. Deze categorie kan gezien worden als het het omgekeerde van `single-source, all-destination' en zal dus ook door dezelfde algoritmen opgelost kunnen worden. Daarnaast is het ook interessant op te merken dat de beste worst-case tijdscomplexiteit voor `single-source, single-destination' even goed is als voor `single-source, all-destination'.
+De algoritmen besproken in deze paper zijn allemaal van de vorm `single-source, all-destination'.
 
-Voor flow en matching:
-\section{Lineair programmeren}
-Een non-lineair programmeerprobleem is het volgende probleem:
-Vind een x zodat:
-\begin{itemize}
-    \item f(x) zo laag mogelijk is
-    \item g\mathcal{_i}(x) \beq
-\end{itemize}
+Deze paper begint de eerste twee delen met enkele eigenschappen en conventies die belangrijk zijn voor de rest van de paper.
+In het derde wordt het algoritme van Dijkstra voorgesteld, bewezen en geanalyseerd.
+In het vierde deel wordt er een tweede algoritme voor grafen met positieve gewichten voorgesteld met een \emph{andere} complexiteit dan dat van Dijkstra. De complexiteit van dit algoritme is niet afhankelijk van het aantal knopen en bogen maar van het aantal bogen en de grootte van het grootste gewicht van de graaf.
+In het vijfde deel wordt het algoritme van Bellman-Ford voorgesteld dat ook een kortste pad in een graaf met negatieve gewichten kan zoeken.
+In het zesde deel wordt complete minimum matching voor volledige bipartite grafen uitgelegd, wat we nodig hebben voor het algoritme in het zevende deel van de paper. In dit voorlaatste deel wordt er een algoritme voorgesteld om de gewichten van een graaf met mogelijks negatieve gewichten om te vormen naar een graaf met enkel positieve gewichten.
+In het laatste deel wordt de tijds- en plaatscomplexiteit van de verschillende algoritmen vergeleken.
+De appendix voorziet enkele eenvoudige stellingen en hun bewijs waarnaar wordt verwezen doorheen de paper.
 
-Convex programming
-Lineair programmeren
-Flow en matching
+Het onderzoek naar het algoritme van Dijkstra en Bellman-Ford komt uit de 4\textsuperscript{de} editie van het boek \say{Introduction to Algorithms} \cite{Introduction}.
 
-\section{Some tips}
+\section{Conventies}
+% Geef aan dat \card{V} en \card{E} respectievelijk het aantal knopen en het aantal bogen in de graaf zijn
+Een graaf $G$ wordt genoteerd als $G = (V, E)$ waarbij dat $V$ de verschillende knopen van de graaf voorstelt en $E$ de verschillende bogen. In deze paper zijn bogen uit $E$ altijd gericht en worden ze aangeduid met $e$ of $(u, v)$ (de boog van knoop $u$ naar knoop $v$). Als er toch een ongerichte boog nodig is tussen twee knopen $u$ en $v$ kan deze worden aangeduid met twee gerichte bogen $(u, v)$ en $(v, u)$. Voor elke boog $e$ of $(u, v)$ stelt $w(e)$ of $w(u, v)$ het gewicht van die boog voor. De input van de start- of bronknoop aan het algoritme wordt altijd aangeduid met $s_0$. Een pad is een aaneenschakeling van knopen via bogen uit de graaf en een simpel pad is een pad waarin geen twee knopen hetzelfde mogen zijn. Paden worden aangeduid met $p$ of $(u, v \dots, w)$. Het gewicht van een pad $(u, v, \dots, w)$ is gedefinieerd als de som van het gewicht van alle individuele bogen van het pad en wordt ook hier weer aangeduid met $w(p)$ of $w(u, v, \dots, w)$.  Als laatste stelt $\delta(u, v)$ het gewicht van het kortst mogelijke pad van $u$ naar $v$ voor. Stel dat er geen pad bestaat tussen $u$ en $v$ dan is $\delta(u, v)$ per conventie $+ \infty$.
 
-\subsection{Inserting tables}
+\section{Concepten en eigenschappen}
+Alle eigenschappen komen uit het boek \say{Introduction to Algorithms} \cite{Introduction}.
+\subsection{Negatieve cycli}
+Een cyclus is een pad waarvan de eerste en laatste knoop hetzelfde zijn. Een cyclus $c$ is negatief als $w(c) \leq 0$. Stel dat een negatieve cyclus bereikt kan worden vanuit een bronknoop $s_0$, dan geldt voor alle knopen $v$ bereikbaar vanuit die negatieve cyclus dat $\delta(s_0, v) = - \infty$. Het kortste pad van $s_0$ naar $v$ kan dan oneindig veel keer de negatieve cyclus doorlopen voor het in $v$ aankomt. Beide algoritmen voor negatieve gewichten in deze paper kunnen niet veel betekenis geven aan de knopen bereikbaar vanuit een negatieve cyclus, dus zullen dit allebei rapporteren.
 
-Make sure your tables are legible and have decent aesthetics. Avoid the use of vertical lines if possible. More info can be found at the following link : \url{https://www.inf.ethz.ch/personal/markusp/teaching/guides/guide-tables.pdf}.
+\subsection{Driehoeksongelijkheid} \label{concepts:driehoeksongelijkheid}
+\begin{theorem}
+    $\forall (u, v) \in E\ en\ s_0 \in V: \delta(s_0, v) \leq \delta(s_0, u) + w(u, v)$
+\end{theorem}
+\begin{proof}
+    De voorlaatste knoop op het kortste pad van $s_0$ naar $v$ is ofwel de knoop $u$ ofwel niet de knoop $u$. Als de voorlaatste knoop $u$ is dan is $\delta(s_0, v) = \delta(s_0, u) + w(u, v)$. Als het kortste pad niet knoop $u$ als voorlaatste knoop heeft dan is $\delta(s_0, v) \leq \delta(s_0, u) + w(u, v)$. Stel dat deze laatste stelling niet geldt dan zou $\delta(s_0, v)$ niet het gewicht van het kortste pad zijn, want dan zou er een korter pad bestaan waarbij dat $u$ de voorlaatste knoop op het pad is.
+\end{proof}
 
-\vspace{0.5cm}
-\begin{tabular}{llr}
-  \toprule
-  First name & Last Name & Grade \\
-  \midrule
-  John & Doe & $7.5$ \\
-  Richard & Miles & $2$ \\
-  \bottomrule
-  \end{tabular}
+\subsection{Relax} \label{concepts:relax}
+Drie van de vier algoritmen voor kortste paden uit deze paper gebruiken het concept \say{relaxing}, enkel scaling met negatieve gewichten niet. Tijdens elk van deze algoritmen wordt er voor elke knoop $v$ een $d$-waarde bijgehouden die aangeduid wordt met $v.d$. Deze $d$ waarde is een geschatte waarde van de lengte van het kortste pad van een gegeven bronknoop $s_0$ naar de knoop $v$. Naast een $d$-waarde wordt er voor elke $v$ ook nog een $\pi$-waarde gebruikt, aangeduid als $v.\pi$. Deze $\pi$ wijst naar de vorige knoop op ditzelfde geschatte kortste pad van $s_0$ naar $v$.
 
-  \vspace{0.5cm}
+De relax functie neemt als input een boog $(u, v)$ en verandert eventueel de $\pi$- en $d$-waarde van de knoop $v$. Stel dat $v.d \geq u.d + w(u, v)$ dan is er zojuist een korter pad gevonden en verandert $v.d$ naar $u.d + w(u, v)$ en $v.\pi$ naar $u$.
 
-  \begin{tabular}{llr}  
-    \toprule
-    \multicolumn{2}{c}{Item} \\
-    \cmidrule(r){1-2}
-    Animal    & Description & Price (\$) \\
-    \midrule
-    Gnat      & per gram    & 13.65      \\
-          &    each     & 0.01       \\
-    Gnu       & stuffed     & 92.50      \\
-    Emu       & stuffed     & 33.33      \\
-    Armadillo & frozen      & 8.99       \\
-    \bottomrule
-  \end{tabular}
+\section{Dijkstra}
+\subsection{Algoritme: initialisatie}
+Neem als input een graaf $G = (V, E)$ en een bronknoop $s_0$. De gewichten van de bogen in E zijn uitsluitend positief. Definieer een verzameling $S$ en een verzameling $D$. De verzameling $S$ zal alle knopen bevatten waarvan we zeker zijn een kortste pad en bijhorend gewicht te hebben gevonden. De verzameling $D$ is op elk moment het complement van de verzameling $S$ in de ruimte $V$, dus: $D = V - S$. Definieer als laatst voor elke knoop $s \in V$ een variabele $\pi$ and $d$. Beiden worden gebruikt om tijdens het algoritme informatie over het tot dan toe best gekende kortste pad naar $s_0$ op te slaan. Om dit pad te kunnen opslaan is $\pi$ een pointer naar een andere knoop en $d$ het gewicht van dit pad.
 
-  
-\subsection{Inserting figures}
+Wanneer het algoritme begint weten we nog niets over eender welk kortste pad, met als enige uitzondering dat het kortste pad van $s_0$ naar $s_0$ $0$ is. De verzameling $S$ wordt dus met de knoop $s_0$ geïnitialiseerd en $s_{0}.d = 0$ en $s_{0}.\pi = s_0$. Aangezien $D + S = V$ initialiseren we $D$ met alle knopen in $V$ op $s_0$ na. Omdat er in de beginsituatie nog niets gekend is over eender welk pad wordt $nil$ als lege pointer gebruikt en $\infty$ als onbekend pad. Dus: $\forall v \in D: v.\pi = nil,\ v.d = \infty$.
 
-When including figures or pictures, make sure that the quality is decent (don't upscale small and low-quality JPEG files). Preferably use vector formats for rescaling. If you copy something from another source, make sure that the original source is clearly referenced/cited. Charts and schematic overviews should be self-produced and not simply copy/pasted. Captions for figures need to be self-explanatory, so don't just mention 'screenhot' or 'chart' as a caption. You may also choose to include figures that span both columns, however be aware that this eats into your page allowance.
+\subsection{Algoritme: iteratie}
+Neem de laatst toegevoegde knoop aan $S$ en benoem deze $s_l$. Relax nu elke boog $b$ die vanuit $s_l$ vertrekt. Voor de relax functie wordt verwezen naar \ref{concepts:relax}. Na het relaxen wordt er in de verzameling $D$ gezocht naar de knoop met de laagste $d$-waarde. Noem deze knoop $s_l$. Knoop $s_l$ wordt uit $D$ verwijderd en aan $S$ toegevoegd, waarna we terug opnieuw kunnen beginnen. Dit wordt herhaald totdat $D$ leeg is.
 
-\begin{figure}[tbp]
-\centerline{\includegraphics{fig1.png}}
-\caption{Example of a figure caption with some relevant explanations.}
-\label{fig}
-\end{figure}
+\subsection{Correctheid: intuïtief}
+Het pad naar $s_l$ moet via de knopen in $S$ gaan. Het pad naar $s_l$ heeft namelijk het laagste gewicht van alle knopen in $D$ en \emph{alle bogen hebben een positief gewicht}. Een pad dat niet via de knopen in $S$ gaat is dus geen kortste pad. Daarnaast zijn alle paden van $s_0$ naar $s_l$ via de knopen van $S$ nagegaan, omdat de boog van elk van deze knopen naar zijn buren gerelaxt is geweest. De $d$- en $\pi$-waarde worden enkel veranderd als er een korter pad wordt gevonden. Daarom dat we er zeker van kunnen zijn dat $s_l.d = \delta(s_0, s_l)$ en het kortste pad aangegeven wordt door de $\pi$-waarden.
 
-\section{Other tips}\label{othertips}
+\subsection{Correctheid: formeel}
+\begin{proof}
+De initiële toestand van $S$ bevat enkel knopen waarvoor er een kortste pad bestaat. De enige knoop die namelijk in $S$ zit is $s_0$. Het kortste pad van $s_0$ naar $s_0$ is $0$ --- en kan ook niet lager zijn dan $0$ want alle gewichten zijn positief --- en dit zijn ook de waarden van respectievelijk $s_0.\pi$ en $s_0.d$.
 
-\begin{itemize}
-\item Do not alter the layout of this document. You may include other packages if needed, but you may not mess with page margins, white spaces, fonts or font sizes. 
-\item Make sure that your sections all contain a decent amount of text. Do not go overboard in the number of sections and subsections. For a paper like this there should be no need for subsubsections. 
-\item Avoid 'lonely' sections, i.e. don't have a 3.1 if there is no 3.2 
-\item Proofread all text before handing in for review. Spelling and grammatical errors are easily discovered by human readers and tools, use them (and not the teaching team). 
-\item Cite all extern work you mention, see also below.
-\item If needed, you can subdivide the paper into multiple files. As long as it produces output consistent with this template.
-\item This template is based on the IEEEtran class. You can refer to the relevant documents for more information if needed (but this is typically not the case).
+Voor de inductieve stap moeten we bewijzen dat als alle knopen in $S$ het correcte kortste pad hebben, we vanuit de laatst toegevoegde knoop relaxen en dan de knoop met de laagste $d$-waarde uit $D$ in $S$ stoppen, alle knopen in $S$ nog altijd het correcte kortste pad hebben. Met andere woorden: voor elke $s_l$ toegevoegd aan S geldt op dat moment $s_l.d = \delta(s_0, s_l)$.
 
-\end{itemize}
+Stel dat er een of meerdere kortste paden van $s_0$ naar $s_l$ zijn, neem dan één van deze kortste paden en benoem deze $p$. Definieer nu een nieuwe knoop $y \in p$ zodat $y$ de eerste knoop op het pad $p$ is dat niet meer in $S$ zit. De knoop $y$ kan eender welke knoop zijn, dus ook $s_l$. Stel nu de voorganger van $y$ als $x$. Aangezien $y$ de eerste knoop niet meer in $S$ is, geldt voor $x$ wel dat $x \in S$. Opnieuw kan $x$ eender welke knoop zijn, inclusief de startknoop $s_0$.
 
-\section*{Conclusions}
+Over de knopen $y$ en $s_l$ kan nu een aantal dingen gezegd worden. Zo komt $y$ niet later voor op $p$ dan $s_l$, is $p$ een kortste pad en zijn de gewichten van de bogen niet negatief zodat $\delta(s_0, y) \leq \delta(s_0, s_l)$. Daarnaast kan gesteld worden dat $s_l.d \leq y.d$ want (één van) de kleinste $d$-waarde uit de verzameling knopen $D$ was die van $s_l$, niet die van $y$. Het pad $p$ is een kortste pad dus is het deelpad van $(s_0, y)$ ook een kortste pad, $x \in S$ dus $x.d = \delta(s_0, x)$ en de boog $(x, y)$ is gerelaxt. Daardoor kunnen we er zeker van zijn dat $y.d = \delta(s_0, y)$. Samengevat:
 
-This section contains the conclusions about your work. It is not an abstract ! Mention your research questions and how you succeeded (or not) in answering them. Be self-critical and reflect upon your own work.
+\[\delta(s_0, y) \leq \delta(s_0, s_l) \leq s_l.d \leq y.d\]
+en
+\[y.d = \delta(s_l, y)\]
+Dus:
+\[\delta(s_0, y) = \delta(s_0, s_l) = s_l.d = y.d\]
+Met als conclusie dat $\delta(s_0, s_l) = s_l.d$ en $s_l$ dus kan toegevoegd worden aan $S$.
+\end{proof}
 
-\section*{Acknowledgments}
+\subsection{Complexiteit}
+Voor elke knoop $v$ uit $V$ worden alle uitgaande bogen gerelaxt. De som alle uitgaande bogen van alle knopen is $\mathcal{O}(\card{E})$. Relaxen kan gedaan worden in constante tijd. Nu moet alleen nog gekeken worden naar de efficiëntie van het zoeken naar de knoop met de laagste $d$-waarde in $D$. Je kan $D$ eenvoudigweg implementeren als een lijst en dan zou de worst-case tijdscomplexiteit voor éénmaal zoeken $\mathcal{O}(\card{V})$ zijn. De totale worst-case complexiteit is nu $\mathcal{O}(\card{E} + \card{V}^2)$.
+De snelste implementatie van Dijkstra is echter met een Fibonacci heap \cite{Fibonacci}, die als eerste gebruikt werd voor het algoritme van Dijkstra. Een Fibonacci heap is een heap die met een geamortiseerde zoektijd van $\mathcal{O}(\log(\card{V}))$ kan zoeken naar een laagste waarde in de heap en met een geamortiseerde constante tijd de waarden kan aanpassen. Een geamortiseerde tijdscomplexiteit betekent de gemiddelde tijdscomplexiteit over alle operaties heen. Het kan bijvoorbeeld zijn dat de eerste operatie wat langer duurt, maar dat de volgende operaties sneller gaan. De totale complexiteit van het zoeken naar de knoop met de laagste waarde in $D$ word dus $\mathcal{O}(\card{V} \cdot \log(\card{V}))$. De totale complexiteit van het algoritme van Dijkstra wordt dan $\mathcal{O}(\card{V} \cdot \log(\card{V}) + \card{E})$.
 
-Mention here the people that helped you with your work, but be brief (no more than 5-6 lines typically).
+\section{Gabow's scaling}
+De aanzet voor dit algoritme was \textit{problem 22-4} uit het boek \say{Introduction to Algorithms} \cite{Introduction}. Het algoritme komt origineel uit \say{Scaling algorithms for network problems} \cite{Scaling}.
+Dit algoritme maakt gebruik van het concept \textit{scaling}. Het concept bestaat erin de input in verschillende iteraties groter en groter te laten worden, totdat de laatste iteratie terug de input van het originele probleem heeft. Elke iteratie benaderd de oplossing van de volgende iteratie op zo een manier dat die iteratie de oplossing van de vorige iteratie kan gebruiken voor zijn eigen oplossing. Dit concept is nuttig wanneer individuele iteraties efficiënter zijn dan direct het hele probleem te berekenen en het aantal iteraties beperkt blijft.
 
-\section*{References}
+In Gabow's algoritme voldoet een iteratie $n$ aan het berekenen van de kortste paden in de graaf waarvan dat enkel de $n$ meest significante bits voor de gewichten van de bogen in rekening worden genomen. Stel dat een boog een gewicht heeft van $38$, dan is dit in binaire representatie $100110$. In iteratie $2$ heeft deze boog een gewicht van twee omdat de twee meest significante bits $10$ zijn en in iteratie $5$ heeft deze boog een gewicht van $19$ omdat de vijf meest significante bits $10011$ zijn. Een getal $a$ heeft $\ceil{\log_2(a)}$ cijfers in de binaire representatie als het geen macht is van twee en $\log_2(a) + 1$ cijfers in de binaire representatie als het wel een macht is van twee. Stel dat $W$ het grootste gewicht van de graaf voorstelt, dan zal het aantal iteraties $k$ dus $\ceil{\log_2(W + 1)}$ zijn.
 
-Please number citations consecutively within brackets \cite{b1}. The 
-sentence punctuation follows the bracket \cite{b2}. Refer simply to the reference 
-number, as in \cite{b3}---do not use ``Ref. \cite{b3}'' or ``reference \cite{b3}'' except at 
-the beginning of a sentence: ``Reference \cite{b3} was the first $\ldots$''
+\subsection{Iteratie n}
+$w_i(u, v)$ is het gewicht van de boog $(u, v)$ in de i\textsuperscript{de} iteratie van het algoritme.
+\begin{lemma} \label{scaling:doubleThePrevious}
+    Voor alle bogen $e$ uit $E$ en voor alle $i \in [2, k]$ geldt $w_i(e) = 2 \cdot w_{i-1}(e)$ of $w_i(e) = 2 \cdot w_{i-1}(e) + 1$.
+\end{lemma}
+\begin{proof}
+    Bij het incrementeren van een iteratie komt er een minder significante bit bij dan al diegenen die er al waren. Deze nieuwe bit voegt zich langs rechts toe waardoor dat de rest van de bits een left bit shift doen, wat resulteert in een verdubbeling van de waarde. Tot slot heeft de nieuw bijgekomen bit een positieve waarde van 0 of 1.
+\end{proof}
 
-\begin{thebibliography}{00}
+\begin{lemma} \label{theorem:maxTheAmountOfVertices}
+    Voor elke knoop uit $V$ en alle $i \in [2, k]$ geldt $\delta_i(s_0) - 2 \cdot \delta_{i-1}(s_0, v) \leq \card{V} -1$.
+\end{lemma}
 
-\bibitem{b1} G. Eason, B. Noble, and I. N. Sneddon, ``On certain integrals of Lipschitz-Hankel type involving products of Bessel functions,'' Phil. Trans. Roy. Soc. London, vol. A247, pp. 529--551, April 1955.
-\bibitem{b2} J. Clerk Maxwell, A Treatise on Electricity and Magnetism, 3rd ed., vol. 2. Oxford: Clarendon, 1892, pp.68--73.
-\bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
-\bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
-\bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
-\bibitem{b6} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ``Electron spectroscopy studies on magneto-optical media and plastic substrate interface,'' IEEE Transl. J. Magn. Japan, vol. 2, pp. 740--741, August 1987 [Digests 9th Annual Conf. Magnetics Japan, p. 301, 1982].
-\bibitem{b7} M. Young, The Technical Writer's Handbook. Mill Valley, CA: University Science, 1989.
-\end{thebibliography}
+\begin{proof}
+    De kardinaliteit van het kortste pad is kleiner dan of gelijk aan $\card{V} - 1$. Hierdoor komen er ook hoogstens $\card{V} - 1$ gevallen voor waarbij dat $w(e_i) = 2 \cdot w(e_{i-1}) + 1$ in de plaats van $w(e_i) = 2 \cdot w(e_{i-1})$.
+\end{proof}
+
+Definieer nu voor alle bogen $(u, v)$ uit $E$ en voor alle $i \in [2, k]$ een alternatief gewicht voor $w_i(u, v)$ als $\hat{w}_i(u, v) = w_i(u, v) + 2 \cdot \delta_{i-1}(s_0, u) - 2 \cdot \delta_{i-1}(s_0, v)$.
+\begin{lemma}
+    $\hat{w}_i(u, v)$ is altijd strikt positief
+\end{lemma}
+
+\begin{proof}
+    Vanwege de driehoeksongelijkheid \ref{concepts:driehoeksongelijkheid} weten we dat
+    \begin{displaymath}
+        \delta_{i-1}(s, v) \leq \delta_{i-1}(s, u) + w_{i-1}(u, v)
+    \end{displaymath}
+    Beide zijden vermenigvuldigen geeft
+    \begin{displaymath}
+        2 \cdot \delta_{i-1}(s, v) \leq 2 \cdot \delta_{i-1}(s, u) + 2 \cdot w_{i-1}(u, v)
+    \end{displaymath}
+    En wegens stelling 1 kunnen we dus stellen dat
+    \begin{gather*}
+        2 \cdot \delta_{i-1}(s, v) \leq 2 \cdot \delta_{i-1}(s, u) + w_i(u, v)\\
+        \Leftrightarrow\\
+        w_i(u, v) + 2 \cdot \delta_{i-1}(s, u) - 2 \cdot \delta_{i-1}(s, v) \geq 0
+    \end{gather*}
+\end{proof}
+
+
+$\hat{\delta}_i(u, v)$ is nu het kortste pad van $u$ naar $v$ met de alternatieve gewichten $\hat{w}_i(u, v)$.
+\begin{lemma} \label{theorem:deltaI}
+    $\delta_i(s_0, v) = \hat{\delta}_i(s_0, v) + 2 \cdot \delta_{i-1}(s_0, v)$
+\end{lemma}
+
+\begin{proof}
+    Begin met de definitie van $\hat{\delta}_i(s_0, v)$. $\hat{\delta}_i(s_0, v)$ is het kortste pad $p$ van knoop $s_0$ naar $v$. Dit pad p bestaat uit 1 of meerdere bogen die telkens 2 knopen verbinden. $p$ is dus bijvoorbeeld een pad $s_0, w, x, \dots, a, b, c, \dots, y, z, v$ en het gewicht van dit pad zal dus ook de optelling zijn van alle alternatieve gewichten die de verschillende knopen verbinden:
+    \begin{gather*}
+        \hat{\delta}_i(s_0, v) = \\
+        \hat{w}_i(s_0, w) + \hat{w}_i(w, x) + \dots + \\
+        \hat{w}_i(a, b) + \hat{w}_i(b, c) + \dots + \\
+        \hat{w}_i(y, z) + \hat{w}_i(z, v)
+    \end{gather*}
+    Het uitbreiden van deze $\hat{w}_i$'s geeft
+    \begin{gather*}
+        \hat{\delta}_i(s_0, v) = \\
+        w_i(s_0, w) + 2\, \delta_{i-1}(s_0, s_0) - 2\, \delta_{i-1}(s_0, w)\ + \\
+        w_i(w, x) + 2\, \delta_{i-1}(s_0, w) - 2\, \delta_{i-1}(s_0, x)\ + \\
+        \dots\ + \\
+        w_i(a, b) + 2\, \delta_{i-1}(s_0, a) - 2\, \delta_{i-1}(s_0, b)\ + \\
+        w_i(b, c) + 2\, \delta_{i-1}(s_0, b) - 2\, \delta_{i-1}(s_0, c)\ + \\
+        \dots\ + \\
+        w_i(y, z) + 2\, \delta_{i-1}(s_0, y) - 2\, \delta_{i-1}(s_0, z)\ + \\
+        w_i(z, v) + 2\, \delta_{i-1}(s_0, z) - 2\, \delta_{i-1}(s_0, v)\ = \\
+        \delta_i(s_0, v) + 2\, \delta_{i-1}(s_0, u) - 2\, \delta_{i-1}(s_0, v)\ = \\
+        \delta_i(s_0, v) + 2\, \delta_{i-1}(s_0, s_0) - 2\, \delta_{i-1}(s_0, v)\ = \\
+        \delta_i(s_0, v) - 2\, \delta_{i-1}(s_0, v)
+    \end{gather*}
+    Zonder alle tussenstappen en herschreven geeft dit
+    \begin{displaymath}
+        \delta_i(u, v) = \hat{\delta}_i(s_0, v) + 2 \cdot \delta_{i-1}(s_0, v)
+    \end{displaymath}
+\end{proof}
+
+We hebben nu een manier om $\delta_i$ te berekenen aan de hand van $\hat{\delta}_i$ en $\delta_{i-1}$, en $\hat{\delta}_i$ wordt berekend aan de hand van $w_i$ en $\delta_{i-1}$. Op deze manier gebruikt een iteratie $i$ de uitkomsten van iteratie $i-1$. Om het algoritme nu nog competitief te laten zijn met de andere algoritmen moet het berekenen van $\hat\delta$ ook nog snel kunnen gebeuren. De volgende stelling is hierbij belangrijk.
+
+\begin{theorem}
+    Voor alle $v$ uit $V$ en alle $i \in [2, k]$ geldt $0 \leq \hat{\delta_i}(s_0, v) \leq \card{E}$
+\end{theorem}
+\begin{proof}
+    $\hat{\delta}$ is positief want alle $\hat{w}$'s zijn ook positief. Stelling \ref{theorem:deltaI} anders geschreven geeft: $\hat{\delta}_{i-1}(s_0, v) = \delta_i(s_0) - 2 \cdot \delta_{i-1}(s_0, v)$. Wegens stelling \ref{theorem:maxTheAmountOfVertices} is $\delta_i(s_0) - 2 \cdot \delta_{i-1}(s_0, v) \leq \card{V} -1$. Daarnaast geldt dat $\card{E} \geq \card{V} - 1$ in eender welke graaf (zie \ref{appendix:aantalBogenInKortstePad}).
+\end{proof}
+
+\subsection{Dijkstra versneld}
+Er staat niet alleen een limiet van $\card{E}$ op $\hat{\delta}_i$ maar ook op $\delta_1$. In de eerste iteratie heeft elke boog een gewicht van 1 of 0. Ook $\delta_1$ kan dus hoogstens $\card{E}$ lang zijn. We kunnen deze aanname gebruiken om het algoritme van Dijkstra nog efficiënter te maken.
+
+Neem als input een graaf $G = (V, E)$ en een bronknoop $s_0$. Neem daarnaast als beperking dat $\forall e \in E: w(e) > 0$ en $\forall v \in V: \delta(s_0, v) \leq \card{E}$. Definieer een structuur $Q$ als een array geïndexeerd op 0 met grootte $\card{E} + 2$. Elk element in deze array heeft een lijst van knopen uit $V$ en in de hele structuur $Q$ komt elke knoop $v$ uit $V$ niet meer dan één keer voor. Initialiseer de lijst $Q[0]$ met $s_0$ en $Q[\card{E} + 1]$ met $V - s_0$. Definieer nu voor elke $v$ in $Q[\card{E} + 1]$ $v.\pi = nil$. Houd een pointer $p$ bij die naar een knoop in $Q$ wijst en initialiseer deze pointer met $s_0$.
+
+Pas nu een algoritme gelijkaardig aan dat van Dijkstra toe. Relax alle edges vertrekkend vanuit $p$. Als een $d$-waarde verandert, verplaats de knoop naar het einde van de lijst $Q[d]$. Verzet na het relaxen de pointer $p$ naar de eerstvolgende knoop in de lijst, en anders naar de eerste knoop van de eerstvolgende niet-lege lijst van $Q$. Herhaal tot $p$ niet meer verder kan.
+
+$Q$ en $p$ vervangen de rol van $S$ en $D$ uit het originele algoritme. Alles wat er in $Q$ zit voor en onder de pointer $p$ kan gezien worden als de verzameling $S$ en alles wat er achter de pointer $p$ zit kan gezien worden als de verzameling $D$. Het zoeken in $D$ wordt vervangen door simpelweg het verschuiven van de pointer $p$. Het enige wat er dus anders is aan het algoritme zijn de voorstellingen van $D$ en $S$ waardoor operaties efficiënter kunnen. Daarom wordt er voor de correctheid van het algoritme verwezen naar het bewijs van het originele algoritme.
+
+In dit algoritme kan het veranderen van de $d$-waarde in constante tijd. De enige complexiteit die er nu nog is, is het zoeken naar de knoop met de volgende laagste $d$-waarde. Dit kost in totaal $\card{V} + \card{E}$ stappen omdat alle knopen en alle lijsten in $Q$ in totaal één keer afgegaan moeten worden. De tijdscomplexiteit is dus $\mathcal{O}(E)$.
+
+\subsection{Algoritme}
+Neem als input een graaf $G = (V, E)$ en een bronknoop $s_0$. De gewichten van $E$ zijn positieve, gehele getallen. Definieer een nieuwe graaf $G_1 = (V, E_1)$ waarbij dat alle gewichten van alle bogen in $E_1$ de waarde hebben van de meest significante bit van het gewicht van de corresponderende boog uit $E$. Bereken voor $G_1$ en $s_0$ de kortste paden $\delta_1(s_0, v)$ voor alle $v$ uit $V$ met behulp van het hierboven gegeven algoritme.
+
+Voor de $i$\textsuperscript{de} iteratie, definieer $G_i = (V, E_i)$. $E_i$ zijn de bogen met als gewicht de $i$ meest significante bits. Definieer daarnaast $\hat{G}_i = (V, \hat{E}_i)$. Gebruik de kortste paden van de $i-1$\textsuperscript{ste} iteratie om $\hat{E}_i$ te berekenen door $\hat{w}_i(u, v) = w_i(u, v) + 2 \cdot \delta_{i-1}(u, v)$ voor alle $(u, v)$ uit $E$. Bereken voor $\hat{G}_i$ en $s_0$ weer de kortste paden $\hat{\delta}(s_0, v)$ voor alle $v \in V$ met het hierboven gegeven algoritme. Bereken $\delta_i(s_0, v)$ door $\delta_i(s_0, v) = \hat{\delta}_i(s_0, v) + 2 \cdot \delta_{i-1}(s_0, v)$ voor alle $v$ uit $V$.
+
+Itereer totdat de $k$\textsuperscript{de} iteratie afgerond is. De verkregen kortste paden geven het antwoord op het gegeven probleem.
+
+Er zijn $k = \log_2(W)$ iteraties van $\mathcal{O}(E)$ tijdscomplexiteit, dus de tijdscomplexiteit van scaling is $\mathcal{O}(E \cdot \log(W))$.
+
+\section{Bellman-Ford}
+Zoals hierboven al is aangegeven werkt het onderstaande algoritme ook met negatieve gewichten.
+
+Net zoals bij het algoritme van Dijkstra wordt er gebruik gemaakt van relaxing. Maar omdat er nu ook negatieve gewichten in de graaf zitten kunnen we niet meer greedy zijn zoals bij Dijkstra. Er zal dus meer gerelaxt moeten worden, de vraag is alleen: hoeveel keer is genoeg?
+
+\subsection{Algoritme}
+Relax alle edges in de graaf in willekeurige volgorde, herhaal deze hele procedure $\card{V}$ keer.
+% De code wordt toegevoegd omdat de lijn hierboven dubbelzinnig geïnterpreteerd kan worden.
+In code zou dit er dan als volgt uit zien.
+\begin{verbatim}
+    for (_ in G.V) {
+        for (e in G.V) {
+            relax(e)
+        }
+    }
+\end{verbatim}
+Hierna wordt elke boog getoetst aan de driehoeksongelijkheid (zie \ref{concepts:driehoeksongelijkheid}). Van zodra er één boog is die niet voldoet aan deze driehoeksongelijkheid dan was er een negatieve cyclus aanwezig aan de start van het algoritme. Als alle bogen voldoen aan de driehoeksongelijkheid kunnen we er zeker van zijn dat er geen enkele negatieve cyclus aanwezig was in de graaf.
+
+\subsection{Intuïtie}
+Herinner dat de kardinaliteit van een kortste pad nooit groter is dan het aantal knopen van de graaf min $1$. Dit omdat een kortste pad geen lussen bevat en dus nooit een knoop dubbel zal bezoeken. Daarnaast moet, om een kortste pad te vinden, elke boog van dit kortste pad in volgorde gerelaxt worden, beginnend bij $s_0$. Er zijn $\card{V}$ ronden, en in elke ronde worden alle edges gerelaxt. Op deze manier zullen op het einde zal elke edge van een van de kortste paden in volgorde gerelaxt zijn.
+
+\subsection{Correctheid}
+% TODO: Vergelijk bewijs met cursus
+Stel dat er een kortste pad $p$ bestaat van $s$ naar $v$. Dit pad bezoekt hoogstens $\card{V} - 1$ knopen. Om dit pad te kunnen vinden moeten alle edges van $s$ naar $v$ in volgorde gerelaxt worden. Dit is mogelijk aangezien elke ronde alle edges worden gerelaxt, de edge die als eerste gerelaxt moet worden zit hier dan ook bij. Er zijn daarnaast $\card{V} - 1$ ronden, dus elk kortste pad zal gevonden worden.
+
+\subsection{Complexiteit}
+Er zijn 2 lussen: een buitenste lus die over alle knopen itereert en een binnenste lus die over alle bogen itereert. Relaxen kan in constante tijd dus de tijdscomplexiteit is $\mathcal{O}(\card{E} \cdot \card{V})$. Dit is een veel hogere prijs om te betalen dan Dijkstra of scaling. Daarom dat deze algoritmen best gebruikt worden wanneer we er zeker van kunnen zijn dat zich geen negatieve gewichten in de graaf bevinden.
+
+
+\section{Minimale perfecte matching op volledige bipartiete grafen}
+Het gepresenteerde algoritme komt uit de paper \say{Faster scaling algorithms for network problems} \cite{FasterScaling}.
+
+\subsection{Bipartiete grafen}
+Een bipartiete graaf is een graaf $G = (V = \{V_1 \cup V_2\}, E)$ waarbij dat $V_1$ en $V_2$ disjuncte verzamelingen van knopen zijn en $E$ enkel knopen uit $V_1$ met knopen uit $V_2$ verbindt. De bogen uit $E$ verbinden dus nooit knopen van $V_1$ onderling of van $V_2$ onderling. Een volledige bipartiete graaf is een bipartiete graaf waarbij dat elke knoop uit $V_1$ met elke knoop uit $V_2$ verbonden is.
+
+\subsection{Matching}
+Het matching probleem bestaat erin voor een gegeven graaf (niet noodzakelijk bipartiet) een deelverzameling van bogen te vinden zodat geen twee bogen uit die verzameling een gemeenschappelijke knoop hebben. Zo een deelverzameling noemen we een matching $M$. Als een boog $e \in M$ dan is deze boog gematcht en als die $e \notin M$ dan is deze boog vrij. Als een knoop $v$ niet raakt aan een boog uit $M$ dan is deze knoop vrij en als dit wel het geval is dan is deze knoop gematcht. Een perfecte matching houdt in dat elke knoop uit $V$ tot een boog uit de matching behoort. Niet voor alle grafen bestaat er perfecte matching; een graaf met een oneven aantal knopen kan bijvoorbeeld al nooit een perfecte matching hebben, net zoals een bipartiete graaf waarin dat het aantal knopen in $V_1$ verschillend is van het aantal knopen in $V_2$.
+
+Het gewicht van een matching is de som van de gewichten van alle bogen uit de matching $M$ en wordt aangeduid met $w(M)$. Een minimale matching is een matching waarvan dat het gewicht van de matching zo laag mogelijk is, dus een minimale perfecte matching is de matching met het laagste gewicht uit de verzameling van alle perfecte matchings.
+
+Het gepresenteerde algoritme heeft als input een volledige bipartiete graaf waarbij dat het aantal knopen in $V_0$ en $V_1$ gelijk is en als output een minimale perfecte matching. Als conventie wordt het aantal knopen in $V_0$ en $V_1$ aangeduid met $n$, dus $n = \card{V_0} = \card{V_1}$.
+
+\subsection{Scale}
+In dit deel van het algoritme wordt hetzelfde concept van scaling gebruikt als in het scaling algoritme van Gabow. Als je hier nog niet mee vertrouwd bent wordt aangeraden om de introductie van het deel over het scaling algoritme van Gabow te lezen.
+\begin{definition}[duale variabele]
+    De duale functie $y: V \longrightarrow \mathbb{Z}$ is een toekenning van waarden aan knopen. We noteren $y(v)$ als $v.y$ en noemen dit de duale variabele van $v$.
+\end{definition}
+\begin{definition}[1-optimal matching]
+    Een 1-optimal matching in $G$ is een koppel (y, M) zodat
+    \begin{itemize}
+        \item $y$ een duale functie voor de knopen van $G$ is
+        \item $M$ een perfecte matching in $G$ is
+        \item De bogen en duale variabelen aan de volgende twee condities voldoen
+            \begin{equation}
+                \forall (u, v) \in G: u.y + v.y \leq w(u, v) + 1 \label{eq:def:oneOpt1}
+            \end{equation}
+            \begin{equation}
+                \forall (u, v) \in M: u.y + v.y = w(u, v) \label{eq:def:oneOpt2}
+            \end{equation}
+    \end{itemize}
+\end{definition}
+
+De volgende stelling motiveert de op het eerste zicht willekeurige definitie van hierboven.
+
+\begin{theorem}
+    Stel dat $(y, M)$ een 1-optimal matching in $G$ is en $k \in \mathbb{N},\ k > n$ een getal dat het gewicht van elke boog in $G$ deelt, dan is $M$ ook een minimale perfecte matching.
+\end{theorem}
+\begin{proof}
+    Zij $P$ eender welke perfecte matching in $G$. Omdat $(y, M)$ al in $G$ aanwezig is, kunnen we \eqref{eq:def:oneOpt1} herschrijven als
+    \begin{equation*}
+        \forall (u, v) \in P: u.y + v.y - 1 - w(u, v) \leq 0
+    \end{equation*}
+    Doordat $P$ perfect is weten we dat alle knopen gematcht zijn en dat $\card{P} = n$ dus $\sum\{u.y + v.y - 1 \mid (u, v) \in P\} = \sum\{v.y \mid v \in V\} - n$. De 1-optimal matching $(y, M)$ zorgt ervoor dat de gewichten van de bogen en duale variabelen voldoen aan \eqref{eq:def:oneOpt2} dus $\sum\{v.y \mid v \in V\} - n = \sum\{w(e) \mid e \in M\} - n = w(M) - n$. Een simpelere maar gelijkaardige redenering kunnen we nu volgen voor $w(u, v)$: $\sum\{w(u, v) \mid (u, v) \in P\} = w(P)$. Dit allemaal samen geeft nu
+    \begin{equation*}
+        w(M) - w(P) \leq n.
+    \end{equation*}
+    
+    Omdat $\forall e \in E: k \mid w(e)$ zijn $w(M)$ en $w(P)$ een veelvoud van $k$ en $k > n$ dus is $w(M) - w(P) \leq 0$. De matching $M$ is dus een minimale perfecte matching.
+\end{proof}
+
+Om de vorige stelling te kunnen toepassen in ons algoritme moeten we de input van de graaf op zo een manier aanpassen dat de minimale matching behouden blijft.
+
+\begin{algorithmm}[Initialisatie]
+    Geef elke boog in de graaf een tweede absolute gewicht $\bar{w}(e) = \abs{w(e)} \cdot (n+1)$. In iteratie $i$ wordt het gewicht van $e$ aangeduid met $w_i(e)$. Het gewicht $w_i(e)$ heeft hetzelfde teken als $w(e)$ en de waarde is gelijk aan de $i$ meest significante bits van $\bar{w}(e)$. Voor iteratie $0$ is $\forall e \in E: w_0(e) = 0$. De duale variabelen in iteratie $i$ worden aangeduid met $v.y_i$ en $\forall v \in V: v.y_0 = 0$. Stel om te beginnen $i$ gelijk aan $0$.
+\end{algorithmm}
+
+Op deze manier heeft $\bar{w}(e)$ $\ceil{\log((n+1) \cdot W + 1)}$ bits, waarbij dat $W$ het grootste absolute gewicht van de graaf voorstelt, zodat er $\mathcal{O}(\log(W \cdot n))$ iteraties zijn.
+
+\begin{algorithmm}[Scaling]
+    De input voor iteratie $i$ zijn de duale variabelen $v.y_{i-1}$ samen met de gewichten $w_i(u, v)$.
+    Iteratie $i$ definieert nu nieuwe duale variabelen $v.y_{i}^{*} = 2 \cdot v.y_{i-1} - 1$ en tijdelijke gewichten $w_{i}'(u, v) = w_{i}(u, v) - (u.y_{i-1}^* + v.y_{i-1}^*)$ en geeft deze als input aan het match algoritme (dat we nog gaan bespreken). Het match algoritme geeft een 1-optimal matching $(y', M)$. De duale variabelen die nu aan de volgende iteratie worden gegeven zijn $v.y_i = v.y_i' + v.y_i^*$.
+\end{algorithmm}
+
+\begin{theorem}
+    Elke iteratie $i$ geeft voor $w_i$ een 1-optimal matching met de duale variabelen $v.y_i$.
+\end{theorem}
+\begin{proof}
+    \textit{Match} geeft de duale variabelen $v.y'$ voor $w'(u, v) = w(u, v) - (u.y^{*} + v.y^{*})$ terug. Als alle duale variabelen nu terug met $v.y^{*}$ worden verhoogd zodat $v.y = v.y' + v.y^{*}$, dan geldt weer voor elke boog $(u, v)$ die tot de matching behoort $w(u, v) = u.y + v.y$.
+\end{proof}
+
+\begin{theorem}
+    De gewichten aan $match$ zijn groter dan $-1$.
+\end{theorem}
+\begin{proof}
+    Iteratie $i$ geeft een 1-optimal matching met duale variabelen $v.y_i$ voor gewichten $w_i(u, v)$. Na het schalen van zowel de gewichten als de duale variabelen is de matching niet 1-optimal meer, maar elke boog uit de graaf voldoet wel nog aan het volgende: $u.y_{i + 1} + v.y_{i + 1} \leq w_{i + 1}(u, v) + 1$. Met andere woorden: $-1 \leq w_{i + 1} - (u.y_{i + 1} + v.y_{i + 1})$.
+\end{proof}
+
+\begin{theorem}
+    In elke iteratie is het gewicht van de minimale perfecte matching met de gewichten $w_i'(u, v)$ niet groter dan $3 \cdot n$.
+\end{theorem}
+\begin{proof}
+    Stel dat $(u, x)$ een boog uit de 1-optimal matching van iteratie $i$ is. In dit geval geldt dat $u.y_i + x.y_i = w_i(u, x)$. Bij het schalen van iteratie $i$ naar iteratie $i + 1$ geldt voor $w_{i + 1}$ dat ofwel $w_{i + 1} = 2 \cdot w_i$ ofwel $w_{i + 1} = 2 \cdot w_i + 1$ ofwel $w_{i + 1} = 2 \cdot w_i - 1$ en voor $v.y_{i + 1}$ dat $v.y_{i + 1} = 2 \cdot v.y_i - 1$.
+    Als $w_{i + 1} = 2 \cdot w_i$ dan is $w_{i + 1}' = 2 \cdot w_i - 2 \cdot (u.y_i + x.y_i) + 2 = 2$. Daarnaast, als $w_{i + 1} = 2 \cdot w_i - 1$ dan is $w_{i + 1}' = w_{i + 1} - 1 = 1$ en als $w_{i + 1} = 2 \cdot w_i + 1$ dan is $w_{i + 1}' = 3$. Een minimale perfecte matching kan dus nooit groter zijn dan $3 \cdot n$, want als dat het geval is dan kunnen voor de nieuwe matching dezelfde bogen worden gekozen als de matching van de iteratie daarvoor, waardoor het gewicht van de nieuwe matching $3n$ is.
+\end{proof}
+
+Op deze manier kan er in elke schaal een 1-optimal matching gevonden worden, kunnen een bijhorende verzameling van duale variabelen gebruikt worden voor het vinden van een matching in de volgende schaal en is de laatste 1-optimal matching een minimale perfecte matching voor het originele probleem. Er rest nu nog het vinden van een efficiënt match algoritme dat een 1-optimal matching $(y, M)$ teruggeeft.
+    
+\subsection{Match}
+\begin{definition}[Wisselpad]
+    Een wisselpad (Engels: alternating path) voor een bepaalde matching (niet noodzakelijk bipartiet) is een simpel pad waarvan dat de bogen afwisselend wel en niet tot de matching behoren.
+\end{definition}
+
+\begin{definition}[Groeipad]
+    Een groeipad (Engels: augmenting path) is een wisselpad waarvan dat de eerste en de laatste knopen vrij zijn.
+\end{definition}
+
+\begin{definition}[Symmetrisch verschil]
+    Het symmetrische verschil tussen twee verzamelingen $A$ en $B$ wordt genoteerd als $A\,\triangle\,B$ en is gedefinieerd als $(A \cup B) \setminus (A \cap B)$.
+\end{definition}
+
+\begin{lemma}
+    Stel dat $M$ een matching is en $P$ de bogen van een groeipad $p$ voor $M$. Na de operatie $M' = M\, \triangle\, P$ is $M'$ nog steeds een matching, maar bevat het één boog meer.
+\end{lemma}
+\begin{proof}
+    $$M \triangle\, P = M \setminus (M \cap P) \cup (P \setminus M)$$
+    Noem de knopen van $p$ $(a, b, c, d, e, \dots, v, w, x, y, z)$. De bogen $\{(b, c), (d, e), \dots, (v, w), (x, y)\}$ behoren tot $P \cap M$ terwijl de bogen $\{(a, b), (c, d), \dots, (w, x), (y, z)\}$ tot $P \setminus M$ horen. Omdat de eerste en de laatste bogen vrij zijn, is $\card{P \setminus M} = \card{P \cap M} + 1$. Hierdoor is $\card{M'} = \card{M} + 1$. De verzameling $M'$ is nog steeds een matching omdat de eerste en de laatste knopen zijn vrij, dus mogen niet alleen de middelste bogen die tot $P \setminus M$ horen toegevoegd worden aan $M'$, maar ook de buitenste bogen $(a, b)$ en $(y, z)$.
+\end{proof}
+
+Een matching kan dus groeien met behulp van groeipaden.
+
+\begin{definition}(kostlengte)
+    De kostlengte van een boog $e$ voor een bepaalde matching $M$ wordt aangeduid met $cl(e)$ en is
+    \begin{equation*}
+        cl(e) = \begin{cases}
+            w(e) & e \in M \\
+            w(e) + 1 & e \notin M
+        \end{cases}
+    \end{equation*}
+\end{definition}
+
+\begin{definition}(eligible boog)
+    Een boog $(u, v)$ is \textit{eligible} als $u.y + v.y = cl(u, v)$.
+\end{definition}
+
+\begin{definition}[1-feasible matching]
+    Een 1-feasible matching is een 1-optimal matching $(y, M)$ waarbij dat $M$ niet perfect moet zijn.
+\end{definition}
+
+\begin{definition}[Netto kostlengte]
+    De netto kostlengte van een verzameling $S$ voor een matching $M$ is
+    \begin{equation*}
+        cl(S) = \sum_{e \in S \setminus M} cl(e) - \sum_{e \in S \cap M} cl(e)
+    \end{equation*}
+\end{definition}
+
+Er is nu genoeg begrip om het algoritme te kunnen uitleggen.
+
+% \begin{algorithm}
+%     \caption{Initialisatie}
+%     \begin{algorithmic}
+%         \STATE $\forall v \in V: v.y = 0$
+%         \STATE $M = \emptyset$
+%     \end{algorithmic}
+% \end{algorithm}
+
+\begin{algorithmm}[Initialisatie]
+    Initialiseer de matching $M$ op de lege verzameling en alle duale variabelen op $0$.
+\end{algorithmm}
+
+\begin{algorithmm}[Algemeen]
+    Zoek een maximale verzameling $A$ van knoop-disjuncte, eligible groeipaden $p$. Dit algoritme wordt uitgelegd in \ref{alg:match:match:1}. Laat de matching $M$ groeien via alle groeipaden van $A$. Dit zorgt voor een 1-feasible matching $M$. Verander de duale variabelen zodat er nieuwe groeipaden van eligible bogen ontstaan maar de matching $M$ 1-feasible blijft. Zie hiervoor \ref{alg:match:match:2}. Als er geen nieuwe groeipaden van eligible bogen gevonden kunnen worden dan is de matching $M$ perfect en 1-optimal.
+\end{algorithmm}
+
+\begin{algorithmm}[Bouw $A$] \label{alg:match:match:1}
+    Benoem $F = V \setminus M$. Dit zijn de knopen die we nog kunnen matchen en hiervandaan proberen we op een diepte-eerst manier onze groeipaden te zoeken. Geeft elke knoop $v \in V$ een nieuwe variabele $c$ (van \textit{checked}) en initialiseer deze variabele telkens op \textit{false}. Ga elke boog die vertrekt vanuit een knoop $v \in F$ af en controleer of dit een eligible boog is. Als er een eligible boog $(v, w)$ gevonden is en $w.c$ is \textit{false}, markeer $w$ dan als bezocht en voeg $(v, w)$ aan $P$ toe. Nu zijn er 2 opties: ofwel is $w$ vrij en kan $P$ aan $A$ toegevoegd worden ofwel is $(v, w)$ niet vrij. In dat geval is er nog geen groeipad gevonden en moet er verder gezocht worden. Er moet nu vanuit $w$ overgestoken worden naar $x$ via de gematchte boog $(w, x)$ om dan vanuit $x$ weer hetzelfde te doen als voor $v$ werd gedaan: zoeken naar een eligible boog $(x, y)$ en als deze boog gevonden is en $y.c \neq true$, $y.c$ op \textit{true} zetten en afhankelijk van een vrije of niet vrije knoop verder gaan of stoppen. Als er op een bepaald moment in het algoritme geen eligible bogen vanuit de knoop $d$ meer gevonden kunnen worden dan moeten de laatste bogen $(b, d)$ en $(a, b)$ uit $P$ verwijdert worden. Zowel $b$ als $d$ blijven gemarkeerd als bezocht. Nu moeten de resterende eligible bogen vanuit $a$ nagegaan worden in de hoop via één van die andere bogen het groeipad te vervolledigen. Het toevoegen en verwijderen van bogen gaat door totdat ofwel $P$ een groeipad van eligible bogen is, dus totdat er een knoop $v \in V_1: v \notin M$ tegengekomen wordt, ofwel $P$ leeg is en er aan de volgende knoop begonnen kan worden. Als $P$ terug leeg is wilt dit niet zeggen dat de zoektocht nutteloos is geweest: er zijn altijd één of meerdere knopen gemarkeerd als bezocht, dus de paden van de andere knopen gaan hier niet meer langs omdat we weten dat er geen vrije boog vanuit die bezochte knoop te halen valt.
+\end{algorithmm}
+
+% \begin{algorithm}
+%     \caption{Bouw $A$}
+%     \label{code:match:match:1}
+%     \begin{algorithmic}[1]
+%         \STATE $F = V \cap M$
+%         \STATE $A = \emptyset$
+%         \FOR {$v \in F$}
+%             \STATE $P = \emptyset$            
+%             \FOR {$(v, w) \in v.adjacent$}
+%                 \IF {$(v, w)$ is eligible}
+%                     \IF {$w$ is free}
+%                         \STATE Add $(v, w)$ to $P$
+%                         \STATE Add $P$ to $A$
+%                     \ELSE
+%                         \FOR {$(w, x) \in w.adjacent$}
+%                             \STATE Zoek een eligible boog die gematcht is, dan een eligible boog die niet gematcht is. Als deze niet gematchte edge niet eindigt met een vrije knoop moet er doorgegaan worden. Anders is er een groeipad gevonden en kan $P$ aan $A$ toegevoegd worden.
+%                         \ENDFOR
+%                     \ENDIF
+%                 \ENDIF
+%             \ENDFOR
+%         \ENDFOR
+%     \end{algorithmic}
+% \end{algorithm}
+
+\begin{algorithmm}[Duale aanpassing] \label{alg:match:match:2}
+    Dit algoritme is uitgeschreven in code hieronder. %\ref{code:matching:matching:2} hieronder.
+    %Definieer een bos $B$ en initialiseer dit bos met alle knopen uit $F$ als wortels van de bomen. Ga nu elk van deze wortels af en zoek eligible bogen vanuit die knoop uit de graaf en voeg deze dan allemaal toe aan de boom $B$. Hierdoor vormt zich een bos waarbij dat de bomen hoogstens een diepte van $1$ hebben. Voor een aanpassing van de duale variabelen bereken
+    %\begin{equation*}
+    %    \delta = min\{cl(v, w) - v.y - w.y \mid v \in V_1 \cap B, w \notin B\}
+    %\end{equation*}
+    %Vermeerder nu $v.y$ met $\delta$ als $v \in V_1 \cap B$ en verminder $v.y$ met $\delta$ als $v \in V_2 \cap B$.
+\end{algorithmm}
+
+\begin{algorithm}
+    \caption{Duale aanpassing}
+    \label{code:matching:matching:2}
+    \begin{algorithmic}[0]
+        \STATE $B = \emptyset$
+        \FOR {$v \in F$}
+            \STATE Maak een nieuwe boom $b$ met $v$ als wortel. Voeg $b$ aan $B$ toe.
+            \FOR {$(v, w) \in v.edges$}
+                \IF {$(v, w)$ eligible is en $w \notin B$}
+                    \STATE Voeg $(v, w)$ toe aan $b$
+                \ENDIF
+            \ENDFOR
+        \ENDFOR
+        \STATE $\delta = min\{cl(v, w) - v.y - w.y \mid (v, w) \in E: v \in V_1 \cap B, w \notin B\}$
+        \FOR {$v \in B \cap V_1$}
+            \STATE $v.y = v.y + \delta$
+        \ENDFOR
+        \FOR {$v \in B \cap V_2$}
+            \STATE $v.y = v.y - \delta$
+        \ENDFOR
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{lemma}
+    Doorheen het hele algoritme blijft $M$ een 1-feasible matching.
+\end{lemma}
+\begin{proof}
+    De beginsituatie is 1-feasible: alle bogen hebben minstens een gewicht van $-1$ en alle duale variabelen zijn $0$ dus elke boog $(u, v)$ voldoet aan $u.y + v.y \leq w(u, v) + 1$. In het eerste deel van het algoritme worden enkel bogen die eligible zijn toegevoegd, waarna het de knopen van $V_2$ worden verlaagd met $1$, dus de matching blijft 1-feasible. De duale variabelen worden in het tweede deel op zo een manier aangepast dat de gematchte bogen hun $u.y + v.y = w(u, v) + 1$ behouden. Er zijn nu nog enkele niet gematchte bogen die onze aandacht verdienen. Van de niet gematchte bogen waarvan dat de duale variabelen van de knopen zijn aangepast, is enkel de duale variabele van $V_1$ aangepast. 
+\end{proof}
+
+% Dit moet niet met een lemma
+\begin{lemma}
+    Stel dat je een 1-feasible matching $M$ met gematchte knopen $m$ laat groeien via een groeipad $p$ van eligible bogen $P$ en daarna $y$ aanpast zodat $\forall v \in (p\, \cap\, m) \cap V_1: v.y = v.y - 1$ dan blijft $M$ een 1-optimal matching
+\end{lemma}
+\begin{proof}
+    Benoem de gegroeide matching $M'$.
+    $$\forall (u, v) \in M \cap P: w(u, v) = u.y + v.y$$
+    $$\forall (u, v) \in P \setminus M: w(u, v) = u.y + v.y + 1$$
+    Doe nu
+    $$\forall v \in (p \cap m) \cap V_1: v.y = v.y - 1$$
+    Dus geldt nu
+    $$\forall (u, v) \in P\setminus M: w(u, v) = u.y + v.y$$
+    Dus is $M'$ een 1-feasible matching.
+\end{proof}
+
+De volgende lemma's gelden op eender welk moment tijdens het algoritme.
+
+\begin{lemma}
+    Stel dat $M*$ een minimale perfecte matching voor $G$ is en $M$ eender welke matching tijdens het algoritme, dan geldt:
+    \begin{equation*}
+        n + c(M^*) - c(M) \geq cl(M^* \triangle M)
+    \end{equation*}
+\end{lemma}
+\begin{proof}
+    \begin{equation*}
+        cl(M^* \triangle M) = \sum_{e \in (M^* \setminus M) \setminus M} cl(e) - \sum_{e \in (M^* \setminus M) \cap M} cl(e)
+    \end{equation*}
+    De verzamelingen waartoe $e$ behoort kunnen eenvoudiger worden opgeschreven als $(M^* \triangle M) - M = M^* \setminus M$ en $(M^* \triangle M) \cap M = M \setminus M^*$.
+    \begin{gather*}
+        \sum_{e \in M^* \setminus M} cl(e) - \sum_{e \in M \setminus M^*} cl(e) \\
+        = \card{M^* \setminus M} + \sum_{e \in M^* \setminus M} c(e) - \sum_{e \in M \setminus M^*} c(e) \\
+        = \card{M^* \setminus M} + c(M^*) - c(M) - (c(M) + c(M^*)) \\
+        = \card{M^* \setminus M} + 2 \cdot c(M^*) - 2 \cdot c(M) \\
+    \end{gather*}
+    Aangezien $\card{M^* - M} \leq n$ en $c(M^*) \leq c(M)$ is dus ook $n + c(M^*) - c(M) \geq cl(M^* \triangle M)$.
+\end{proof}
+
+\begin{lemma}
+    Zij $s$ een vrije knoop en $z$ een gematchte knoop op een wisselpad $p = (s, t, u, v, w, \dots, x, y, z)$ voor een 1-feasible matching $M$ waarbij dat $P$ de verzameling bogen van dit pad voorstelt dan is $s.y \leq z.y + cl(P)$.
+\end{lemma}
+\begin{proof}
+    \begin{equation*}
+        cl(P) = \sum_{(u, v) \in P \setminus M} cl(u, v) - \sum_{(u, v) \in P \cap M} cl(u, v)
+    \end{equation*}
+    Omdat de matching $M$ 1-feasible is, is $\forall (u, v) \in P \setminus M: u.y + v.y \leq cl(u, v)$ en $\forall (u, v) \in P \cap M: u.y + v.y = cl(u, v)$.
+    \begin{gather*}
+        cl(P) \geq s.y + t.y + u.y + v.y + \dots + x.y + y.y - \\
+        (t.y + u.y + v.y + w.y + \dots + x.y + y.y + z.y) \\
+        = s.y - z.y
+    \end{gather*}
+    We eindigen dus met $s.y \leq z.y + cl(P)$.
+\end{proof}
+
+\section{Omzetten van negatieve gewichten}
+Het volgende algoritme komt uit \cite{Scaling}, maar is aangepast aan het algoritme van hierboven.
+
+Neem eender welke graaf $G$, construeer hieruit een corresponderende bipartiete graaf $G'$. Doe dit door voor iedere knoop $v$ twee knopen $v_1$ en $v_2$ aan $G'$ toe te voegen. Voeg $v_1$ aan $G'.V_1$ toe en $v_2$ aan $G'.V_2$ toe. Voeg voor iedere boog $e = (u, v)$ uit $G$ een boog $e' = (u_1, v_2)$ met hetzelfde gewicht aan $G'$ toe. Voeg als laatste ook bogen met gewicht $0$ tussen elke $v_1$ en $v_2$ toe.
+
+De verzameling knopen $G'.V_1$ komt als het ware overeen met de knoopdelen voor de uitgaande bogen in de originele graaf $G$ en $G'.V_2$ komt dan overeen met de knoopdelen voor de inkomende bogen. Daarom dat bogen $(u, v)$ in $G'$ altijd van index $u_1$ naar index $v_2$ gaan, en er kan gemakkelijk van het inkomende deel naar het uitgaande deel van de knoop worden gegaan door de boog met gewicht $0$ van index $2$ naar index $1$ van dezelfde knoop te volgen. Vanaf nu noemen we deze bogen knoopgangbogen. Op deze manier komt een cyclus $p = (u, v, w)$ in $G$ komt overeen met de deelmatching ${(u_1, v_2), (v_1, w_2), (w_1, u_2)}$. Dit noemen we een corresponderende deelmatching voor $G'$ van een cyclus in $G$.
+
+\begin{definition}[Corresponderende deelmatching]
+\end{definition}
+
+\begin{lemma}
+    Als in een perfecte matching een boog $(u_{out}, v_{in})$ gematcht is, dan moeten de andere overeenkomende bogen van de cyclus in $G$ ook gematcht worden.
+\end{lemma}
+
+\begin{lemma}
+    Er zijn geen negatieve cycli in $G$ als en slecht als $c(G') = 0$.
+\end{lemma}
+
+\begin{lemma}
+    Als $G$ één of meerdere negatieve cycli heeft dan is de minimale perfecte matching in $G'$ negatief.
+\end{lemma}
+\begin{proof}
+    Neem een negatieve cyclus uit $G$ en noem deze $\gamma$. Noem de verzameling overeenkomende knoopgangbogen in $G'$ $\gamma'$. Match alle knopen in $G' - \gamma$ waardoor $c(G') = 0$. Voor alle bogen $(u, v)$ uit $\gamma$, match $(u'_{out}, v'_{in})$. Hierdoor is de matching perfect en is $c(G') < 0$.
+\end{proof}
+
+Voer het vorige algoritme uit op $G'$ en neem hier de optimal matching $(y, M)$ uit.
+
+\begin{lemma}
+    Voor alle knopen $v$ uit $G$ geldt dat $v'_{in}.y = -v'_{out}.y$.
+\end{lemma}
+\begin{proof}
+    De boog $(v'_{in}, v'_{out})$ heeft een gewicht van $0$ dus als deze gematcht is dan geldt $v_{in}' = -v_{out}'$. Stel dat deze boog niet gematcht is, dan maken $v'_{in}$ en $v'_{out}$ deel uit van dezelfde cyclus. Het gewicht van deze cyclus is $0$ dus voor een cyclus $(u, w, ..., y, u)$ is $u_{out}.y + w_{in}.y + \dots + y_{out}.y + u_{in}.y = 0$ Omdat de matching optimal is geldt ook $v_{out} + v_{in} \leq w(v_{out}, v_{in}) = 0$. Alles samen moet dus $v_{out} = -v_{in}$.
+\end{proof}
+
+Dan hier het laatste algoritme om het kortste pad te berekenen.
+
+\begin{algorithmm}
+    Bouw een nieuwe graaf $G'$ van $G$ en laat hier het minimale perfecte matching algoritme over lopen zodat er een matching en duale variabelen uitkomen. Deel de duale variabelen van de laatste iteratie van het vorige algoritme door $n - 1$. Als de matching een negatief gewicht heeft, stop dan, de originele graaf heeft een negatieve cyclus. Stel nu voor elke knoop $v$ uit $G.V$ de duale variabele van deze knoop gelijk aan de duale variabele van de corresponderende "uitgangsknoop" uit $G'$. Elke knoop $v$ uit $G.V$ heeft nu een duale variabele $v.y$. Transformeer nu het gewicht van alle bogen met de duale variabelen 
+\end{algorithmm}
+
+\section{Vergelijking van de verschillende algoritmen}
+De complexiteit van het algoritme van Dijkstra is $\mathcal{O}(\card{V} \cdot \log(\card{V}) + \card{E}^2)$ terwijl de positieve scaling van Gabow $\mathcal{O}(\card{E} \cdot \log{W})$ is (herinner: $W$ is het grootste gewicht uit de graaf). Welk algoritme is nu beter? Dat hangt er nu juist van af. Ervan uitgaande dat de input groot is en de grootte van de input ook op voorhand geweten kan je $\card{E} \cdot \log(W)$ vergelijken met $\card{V} \cdot \log{\card{V}}$. Als dit niet mogelijk is dan kan ook altijd $\log(W)$ met $\log(\card{V})$ vergeleken worden. Als $\log(W)$ groter is dan moet Dijkstra beter zijn, omdat $\card{E}$ altijd groter is dan $\card{V} - 1$. Een voorbeeld waarbij dat $W$ klein is ten opzichte van $\card{V}$ is het wegennet. Bovendien is hier $\card{E} \ll \card{V}^{2}$. Gabow's scaling zou dus een kandidaat kunnen zijn voor kortste paden. Praktisch gezien is het waarschijnlijk beter om Dijkstra te gebruiken omdat dit meer geïmplementeerd is dan Gabow. \cite{BGL}
+Naast Dijkstra en Gabow hebben we nog een derde algoritme gezien om kortste paden te vinden, dit van Bellman-Ford. Dit algoritme doet qua tijdscomplexiteit erg onder voor de twee anderen maar heeft als voordeel dat het ook met negatieve gewichten werkt. Als we er dus zeker van kunnen zijn dat de graaf enkel positieve gewichten bevat en de efficiëntie doet ertoe dan kan dus beter voor één van de twee anderen gegaan worden. Een andere optie voor het zoeken van kortste paden is het omzetten van negatieve gewichten naar positieve gewichten.
+
+
+\section*{Conclusies}
+De aanzet van deze literatuurstudie was de paper \say{Negative-Weight Single-Source Shortest Paths in Near-linear Time} \cite{bernstein2023negativeweight}. Dit algoritme heeft als input gehele getallen (positief of negatief) en berekent de kortste paden in $\mathcal{O}(\card{E} \cdot \log(\card{V}) \cdot \log(W))$, wat de laagste complexiteit van minimale perfecte matching op volledige bipartiete grafen doorbreekt. Zoals duidelijk geworden in deze paper ben ik daar niet toe geraakt, vooral het laatste algoritme doorgronden heeft heel veel tijd in beslag genomen, wat niet wilt zeggen dat de andere 3 allemaal heel gemakkelijk zijn. Het bewijs voor het algoritme van Dijkstra is redelijk tricky en heeft me een aantal iteraties gekost. Scaling met positieve gewichten heeft ook een aantal iteraties nodig gehad om te begrijpen.
+
+Omdat een blik op de paper \cite{Scaling} en \cite{FasterScaling} leert dat de algoritmen daar gebaseerd zijn op het Hungarian algoritme heb ik dat eerst proberen te doorgronden aan de hand van het boek \say{Combinatorial Optimization: Algorithms and Complexity} \cite{combinatorialOptimization}. Dit boek legt het algoritme wel uit, maar pas in de latere hoofdstukken waardoor het het algoritme kan uitleggen aan de hand van lineair programmeren. Na hier een aantal weken mee bezig te zijn geweest zijn we tot de conclusie gekomen dat er te weinig tijd is om zo in detail te kunnen treden dus heb ik de algoritmen uit \cite{Scaling} en \cite{FasterScaling} direct proberen te doorgronden. Dit heeft tijd gekost, maar zoals hierboven te zien is heb ik het wel op een lager niveau uitgelegd gekregen. Het is niet alleen uitgebreider uitgelegd, de informatie is afgestemd op wat nodig is voor het algoritme en de structuur volgt meer de andere algoritmen uit de paper.
+
+Ik heb geleerd dat het niet altijd gemakkelijk is om je hoofd bij de theoretische concepten te houden en dat het ook veel tijd in beslag neemt om algoritmen van voor tot achter te bestuderen en uit te schrijven.
+
+
+\section*{Bedankingen}
+Ik zou graag professor Jan Van den Bussche bedanken voor zijn hulp in de vorm van tijd en inzicht om bepaalde theoretische concepten te helpen doorgronden.
+
+
+\printbibliography
+
+\appendix \label{appendix:stellingen}
+\begin{theorem}
+    Gegeven een graaf $G = (V, E)$. Er geldt dat $\card{E} \geq \card{V} - 1$.
+\end{theorem}
+\begin{proof}
+    Een boom $T = (V, E)$ heeft $\card{V} - 1$ bogen; er is een wortel en voor elke andere knoop in de boom moet er ook een boog zijn. Als een boog wordt weggehaald dan zijn er 2 bomen, die allebei aan de stelling voldoen. Stel dat er een knoop wordt toegevoegd dan geldt de stelling zeker.
+\end{proof}
+\begin{theorem} \label{appendix:aantalBogenInKortstePad}
+    Een kortste pad in een graaf zonder negatieve cycli is een simpel pad en de kardinaliteit is kleiner dan of gelijk aan $\card{V} - 1$.
+\end{theorem}
+\begin{proof}
+    Een simpel pad is een pad waarbij dat er geen knoop twee keer voorkomt. Stel dat een kortste pad geen simpel pad zou zijn dan zou er minstens één lus in het pad zit. De aanname is dat er geen negatieve cycli in de graaf zijn, dus heeft deze lus een positieve kost en zou dit kortste pad korter kunnen door de lus in het pad weg te laten. Dit is een contradictie dus is een kortste pad in een graaf zonder negatieve cycli een simpel pad. Een simpel pad bezoekt elke knoop hoogstens één keer dus het aantal bogen waarover dit pad loopt is hoogstens $\card{V} - 1$.
+\end{proof}
 
 \end{document}
