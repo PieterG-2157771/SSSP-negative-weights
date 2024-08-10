@@ -24,10 +24,14 @@
 
 \newtheorem{theorem}{Stelling}[section]
 \newtheorem{lemma}{Lemma}[section]
+\newtheorem{nonLemma}{Non-lemma}[section]
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definitie}[section]
 \newtheorem{algorithmm}{Algoritme}[section]
+
+\theoremstyle{remark}
+\newtheorem*{remark}{Opmerking}
 
 
 \DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
@@ -41,6 +45,9 @@
 
 \let \oldexists \exists
 \renewcommand{\exists}{\oldexists\,}
+
+\newcommand{\vin}{_{in}}
+\newcommand{\vout}{_{out}}
 
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -86,26 +93,25 @@ De appendix voorziet enkele eenvoudige stellingen en hun bewijs waarnaar wordt v
 Het onderzoek naar het algoritme van Dijkstra en Bellman-Ford komt uit de 4\textsuperscript{de} editie van het boek \say{Introduction to Algorithms} \cite{Introduction}.
 
 \section{Conventies}
-% Geef aan dat \card{V} en \card{E} respectievelijk het aantal knopen en het aantal bogen in de graaf zijn
-Een graaf $G$ wordt genoteerd als $G = (V, E)$ waarbij dat $V$ de verschillende knopen van de graaf voorstelt en $E$ de verschillende bogen. In deze paper zijn bogen uit $E$ altijd gericht en worden ze aangeduid met $e$ of $(u, v)$ (de boog van knoop $u$ naar knoop $v$). Als er toch een ongerichte boog nodig is tussen twee knopen $u$ en $v$ kan deze worden aangeduid met twee gerichte bogen $(u, v)$ en $(v, u)$. Voor elke boog $e$ of $(u, v)$ stelt $w(e)$ of $w(u, v)$ het gewicht van die boog voor. De input van de start- of bronknoop aan het algoritme wordt altijd aangeduid met $s_0$. Een pad is een aaneenschakeling van knopen via bogen uit de graaf en een simpel pad is een pad waarin geen twee knopen hetzelfde mogen zijn. Paden worden aangeduid met $p$ of $(u, v \dots, w)$. Het gewicht van een pad $(u, v, \dots, w)$ is gedefinieerd als de som van het gewicht van alle individuele bogen van het pad en wordt ook hier weer aangeduid met $w(p)$ of $w(u, v, \dots, w)$.  Als laatste stelt $\delta(u, v)$ het gewicht van het kortst mogelijke pad van $u$ naar $v$ voor. Stel dat er geen pad bestaat tussen $u$ en $v$ dan is $\delta(u, v)$ per conventie $+ \infty$.
+De knoop $s_0$ wordt altijd gebruikt om de bronknoop aan te duiden. Het andere deel van de input, de graaf, wordt genoteerd als $G = (V, E)$ waarbij dat $V$ de knopen van de graaf voorstelt en $E$ de bogen. Met $\card{V}$ en $\card{E}$ wordt respectievelijk het aantal knopen en het aantal bogen van de graaf bedoeld. In deze paper zijn bogen uit $E$ altijd gericht en worden ze aangeduid met $e$ of $(u, v)$ (de boog van knoop $u$ naar knoop $v$). Als er toch een ongerichte boog nodig is tussen twee knopen $u$ en $v$ kan deze worden aangeduid met twee gerichte bogen $(u, v)$ en $(v, u)$. Voor elke boog $e$ of $(u, v)$ stelt $w(e)$ of $w(u, v)$ het gewicht van die boog voor. In deze paper wordt altijd aangenomen dat $w(e) \in \mathbb{Z}$.
+Een pad is een aaneenschakeling van knopen via bogen uit de graaf en een simpel pad is een pad waarin geen twee knopen hetzelfde mogen zijn. Paden worden aangeduid met $p$ of $(u, \dots, w)$. Het gewicht van een pad $p$ is gedefinieerd als $\sum\{w(e) \mid e \in p\}$ en wordt ook hier weer aangeduid met $w(p)$. Als laatste stelt $\delta(u, v)$ het gewicht van het kortst mogelijke pad van $u$ naar $v$ voor. Stel dat er geen pad bestaat tussen $u$ en $v$ dan is $\delta(u, v)$ per conventie $+ \infty$.
 
 \section{Concepten en eigenschappen}
-Alle eigenschappen komen uit het boek \say{Introduction to Algorithms} \cite{Introduction}.
 \subsection{Negatieve cycli}
-Een cyclus is een pad waarvan de eerste en laatste knoop hetzelfde zijn. Een cyclus $c$ is negatief als $w(c) \leq 0$. Stel dat een negatieve cyclus bereikt kan worden vanuit een bronknoop $s_0$, dan geldt voor alle knopen $v$ bereikbaar vanuit die negatieve cyclus dat $\delta(s_0, v) = - \infty$. Het kortste pad van $s_0$ naar $v$ kan dan oneindig veel keer de negatieve cyclus doorlopen voor het in $v$ aankomt. Beide algoritmen voor negatieve gewichten in deze paper kunnen niet veel betekenis geven aan de knopen bereikbaar vanuit een negatieve cyclus, dus zullen dit allebei rapporteren.
+Een (simpele) cyclus is een simple pad waarvan de eerste en laatste knoop hetzelfde zijn. Een cyclus $c$ is negatief als $w(c) \leq 0$. Stel dat een negatieve cyclus bereikt kan worden vanuit een bronknoop $s_0$, dan geldt voor alle knopen $v$ bereikbaar vanuit die negatieve cyclus dat $\delta(s_0, v) = - \infty$. Het kortste pad van $s_0$ naar $v$ kan dan een oneindig aantal keer de negatieve cyclus doorlopen voor het in $v$ aankomt. Beide algoritmen voor negatieve gewichten in deze paper kunnen niet veel betekenis geven aan de knopen bereikbaar vanuit een negatieve cyclus en hebben allebei de mogelijkheid om dit te detecteren.
 
 \subsection{Driehoeksongelijkheid} \label{concepts:driehoeksongelijkheid}
 \begin{theorem}
     $\forall (u, v) \in E\ en\ s_0 \in V: \delta(s_0, v) \leq \delta(s_0, u) + w(u, v)$
 \end{theorem}
 \begin{proof}
-    De voorlaatste knoop op het kortste pad van $s_0$ naar $v$ is ofwel de knoop $u$ ofwel niet de knoop $u$. Als de voorlaatste knoop $u$ is dan is $\delta(s_0, v) = \delta(s_0, u) + w(u, v)$. Als het kortste pad niet knoop $u$ als voorlaatste knoop heeft dan is $\delta(s_0, v) \leq \delta(s_0, u) + w(u, v)$. Stel dat deze laatste stelling niet geldt dan zou $\delta(s_0, v)$ niet het gewicht van het kortste pad zijn, want dan zou er een korter pad bestaan waarbij dat $u$ de voorlaatste knoop op het pad is.
+    De voorlaatste knoop op het kortste pad van $s_0$ naar $v$ is ofwel de knoop $u$ ofwel niet de knoop $u$. Als de voorlaatste knoop $u$ is dan is $\delta(s_0, v) = \delta(s_0, u) + w(u, v)$. Als het kortste pad niet knoop $u$ als voorlaatste knoop heeft dan is $\delta(s_0, v) \leq \delta(s_0, u) + w(u, v)$. Stel dat deze laatste stelling niet geldt dan zou $\delta(s_0, v)$ niet het gewicht van het kortste pad zijn, want dan zou er een korter pad bestaan waarbij dat $u$ de voorlaatste knoop op het pad is en dus $\delta(s_0, v) = \delta(s_0, u) + w(u, v)$ weer van toepassing is.
 \end{proof}
 
 \subsection{Relax} \label{concepts:relax}
-Drie van de vier algoritmen voor kortste paden uit deze paper gebruiken het concept \say{relaxing}, enkel scaling met negatieve gewichten niet. Tijdens elk van deze algoritmen wordt er voor elke knoop $v$ een $d$-waarde bijgehouden die aangeduid wordt met $v.d$. Deze $d$ waarde is een geschatte waarde van de lengte van het kortste pad van een gegeven bronknoop $s_0$ naar de knoop $v$. Naast een $d$-waarde wordt er voor elke $v$ ook nog een $\pi$-waarde gebruikt, aangeduid als $v.\pi$. Deze $\pi$ wijst naar de vorige knoop op ditzelfde geschatte kortste pad van $s_0$ naar $v$.
+Drie van de vier algoritmen voor kortste paden uit deze paper maken rechtstreeks gebruik van het concept \textit{relaxing}, enkel het laatste algoritme niet. Tijdens elk van deze algoritmen wordt er voor elke knoop $v$ een variabele $d$ bijgehouden die aangeduid wordt met $v.d$. Deze variabele is een  overschatte waarde voor de lengte van het kortste pad $(s_0, v)$ en wordt in het begin van het algoritme dus op zo een manier gekozen dat $\forall v: v.d \geq \delta(s_0, v)$. Doorheen het algoritme blijft dit ook zo tot we bij afloop hebben dat $\forall v: v.d = \delta(s_0, v)$. Naast een $d$-waarde wordt er voor elke $v$ ook nog een $\pi$-waarde gebruikt, aangeduid als $v.\pi$. Deze $\pi$ wijst naar de vorige knoop op ditzelfde geschatte kortste pad van $s_0$ naar $v$.
 
-De relax functie neemt als input een boog $(u, v)$ en verandert eventueel de $\pi$- en $d$-waarde van de knoop $v$. Stel dat $v.d \geq u.d + w(u, v)$ dan is er zojuist een korter pad gevonden en verandert $v.d$ naar $u.d + w(u, v)$ en $v.\pi$ naar $u$.
+De relax functie neemt als input een boog $(u, v)$ en verandert eventueel de $\pi$- en $d$-waarden van de knoop $v$. Stel dat $v.d \geq u.d + w(u, v)$ dan is er zojuist een korter pad gevonden en verandert $v.d$ naar $u.d + w(u, v)$ en $v.\pi$ naar $u$. Anders wordt er niets veranderd.
 
 \section{Dijkstra}
 \subsection{Algoritme: initialisatie}
@@ -192,7 +198,7 @@ $\hat{\delta}_i(u, v)$ is nu het kortste pad van $u$ naar $v$ met de alternatiev
     $\delta_i(s_0, v) = \hat{\delta}_i(s_0, v) + 2 \cdot \delta_{i-1}(s_0, v)$
 \end{lemma}
 
-\begin{proof}
+\begin{proof} \label{proof:gabow:cancel}
     Begin met de definitie van $\hat{\delta}_i(s_0, v)$. $\hat{\delta}_i(s_0, v)$ is het kortste pad $p$ van knoop $s_0$ naar $v$. Dit pad p bestaat uit 1 of meerdere bogen die telkens 2 knopen verbinden. $p$ is dus bijvoorbeeld een pad $s_0, w, x, \dots, a, b, c, \dots, y, z, v$ en het gewicht van dit pad zal dus ook de optelling zijn van alle alternatieve gewichten die de verschillende knopen verbinden:
     \begin{gather*}
         \hat{\delta}_i(s_0, v) = \\
@@ -493,11 +499,41 @@ Er is nu genoeg begrip om het algoritme te kunnen uitleggen.
     \end{algorithmic}
 \end{algorithm}
 
+
 \begin{lemma}
     Doorheen het hele algoritme blijft $M$ een 1-feasible matching.
 \end{lemma}
 \begin{proof}
-    De beginsituatie is 1-feasible: alle bogen hebben minstens een gewicht van $-1$ en alle duale variabelen zijn $0$ dus elke boog $(u, v)$ voldoet aan $u.y + v.y \leq w(u, v) + 1$. In het eerste deel van het algoritme worden enkel bogen die eligible zijn toegevoegd, waarna het de knopen van $V_2$ worden verlaagd met $1$, dus de matching blijft 1-feasible. De duale variabelen worden in het tweede deel op zo een manier aangepast dat de gematchte bogen hun $u.y + v.y = w(u, v) + 1$ behouden. Er zijn nu nog enkele niet gematchte bogen die onze aandacht verdienen. Van de niet gematchte bogen waarvan dat de duale variabelen van de knopen zijn aangepast, is enkel de duale variabele van $V_1$ aangepast. 
+    De beginsituatie is 1-feasible: alle bogen hebben minstens een gewicht van $-1$ en alle duale variabelen zijn $0$ dus elke boog $(u, v)$ voldoet aan $u.y + v.y \leq w(u, v) + 1$. In het eerste deel van het algoritme worden enkel bogen die eligible zijn toegevoegd, waarna het de knopen van $V_2$ worden verlaagd met $1$, dus de matching blijft 1-feasible. In het tweede deel wordt het bos $B$ op zo een manier gegroeid dat een aanpassing van de duale variabelen alle eligible bogen eligible houdt. Als een boog $(v, w)$ eligible is maar nog niet gematcht dan wordt die boog toegevoegd aan het bos $B$. Ofwel is $w$ nu vrij en kan er terug naar het eerste deel van de lus van match gegaan worden ofwel is $w$ niet vrij en wordt de gematchte boog $(w, x)$ aan $B$ toegevoegd. Als $v \in V_1$ is dan wordt $v.y = v.y + \delta$ gedaan en als $v \in V_0$ dan wordt $v.y = v.y - \delta$ gedaan. Als de linkerknoop van een eligible boog in $B$ zit dan zit de rechterknoop van die eligible boog er ook in.
+\end{proof}
+
+\begin{definition}[$\Delta$]
+    Definieer vanaf nu $\Delta$ als de som van alle duale aanpassingen.
+\end{definition}
+
+\begin{definition}[$F$]
+    De verzameling vrije knopen in $V_0$ noteren we vanaf nu als $F$, dus $F = V_0 \setminus M$.
+\end{definition}
+
+\begin{lemma}
+    $\forall v \in F: v.y = \Delta$
+\end{lemma}
+\begin{proof}
+    Een vrije knoop in $V_0$ zit altijd in het bos $B$, waarna voor alle knopen $v$ uit $V_1 \cap B$ $v.y = v.y + \delta$ gedaan wordt.
+\end{proof}
+
+\begin{lemma}
+    $\forall v \in V_1 \setminus M: v.y = 0$
+\end{lemma}
+\begin{proof}
+    Niet-eligible bogen worden niet aan $B$ toegevoegd en als een boog $(u, v)$ dan toch eligible wordt dan wordt er geen duale aanpassing meer gedaan, maar worden de bogen gematcht.
+\end{proof}
+
+\begin{nonLemma}
+    De buitenste lus van \textit{match} wordt $\mathcal{O}(\sqrt{n})$ keer uitgevoerd.
+\end{nonLemma}
+\begin{proof}
+    
 \end{proof}
 
 % Dit moet niet met een lemma
@@ -553,55 +589,115 @@ De volgende lemma's gelden op eender welk moment tijdens het algoritme.
     We eindigen dus met $s.y \leq z.y + cl(P)$.
 \end{proof}
 
+
+
 \section{Omzetten van negatieve gewichten}
 Het volgende algoritme komt uit \cite{Scaling}, maar is aangepast aan het algoritme van hierboven.
 
-Neem eender welke graaf $G$, construeer hieruit een corresponderende bipartiete graaf $G'$. Doe dit door voor iedere knoop $v$ twee knopen $v_1$ en $v_2$ aan $G'$ toe te voegen. Voeg $v_1$ aan $G'.V_1$ toe en $v_2$ aan $G'.V_2$ toe. Voeg voor iedere boog $e = (u, v)$ uit $G$ een boog $e' = (u_1, v_2)$ met hetzelfde gewicht aan $G'$ toe. Voeg als laatste ook bogen met gewicht $0$ tussen elke $v_1$ en $v_2$ toe.
+\subsection{Van $G$ naar $G'$}
+Neem eender welke graaf $G$, construeer hieruit een corresponderende bipartiete graaf $G'$. Doe dit door voor iedere knoop $v$ twee knopen $v_{out}$ en $v_{in}$ aan $G'$ toe te voegen. Voeg $v_{out}$ toe aan $G'.V_{out}$ en $v_{in}$ aan $G'.V_{in}$. Voeg voor iedere boog $e = (u, v)$ uit $G$ een boog $e' = (u_{out}, v_{in})$ met hetzelfde gewicht aan $G'$ toe. Voeg als laatste ook bogen met gewicht $0$ tussen elke $v_in$ en $v_out$ toe.
 
-De verzameling knopen $G'.V_1$ komt als het ware overeen met de knoopdelen voor de uitgaande bogen in de originele graaf $G$ en $G'.V_2$ komt dan overeen met de knoopdelen voor de inkomende bogen. Daarom dat bogen $(u, v)$ in $G'$ altijd van index $u_1$ naar index $v_2$ gaan, en er kan gemakkelijk van het inkomende deel naar het uitgaande deel van de knoop worden gegaan door de boog met gewicht $0$ van index $2$ naar index $1$ van dezelfde knoop te volgen. Vanaf nu noemen we deze bogen knoopgangbogen. Op deze manier komt een cyclus $p = (u, v, w)$ in $G$ komt overeen met de deelmatching ${(u_1, v_2), (v_1, w_2), (w_1, u_2)}$. Dit noemen we een corresponderende deelmatching voor $G'$ van een cyclus in $G$.
+De verzameling knopen $G'.V_{out}$ komt als het ware overeen met de knoopdelen voor de uitgaande bogen in de originele graaf $G$ en $G'.V_{in}$ komt dan overeen met de knoopdelen voor de inkomende bogen. Daarom dat bogen $(u, v)$ in $G'$ altijd van index $u_{out}$ naar index $v_{in}$ gaan, en er kan gemakkelijk van het inkomende deel naar het uitgaande deel van de knoop worden gegaan door de boog met gewicht $0$ van index $in$ naar index $out$ van dezelfde knoop te volgen.
+
+\begin{definition}[Knoopgangboog]
+    Voor een knoop $v$ in $G$ is de boog tussen $v_{in}$ en $v_{out}$ uit $G$ een knoopgangboog van $v$.
+\end{definition}
 
 \begin{definition}[Corresponderende deelmatching]
+    Als $(u, v, w, u)$ een cyclus is in $G$ dan is ${(u_{out}, v_{in}), (v_{out}, w_{in}), (w_{out}, u_{in})}$ een corresponderende deelmatching in $G'$ van de cyclus $(u, v, w, u)$ uit $G$.
 \end{definition}
 
 \begin{lemma}
-    Als in een perfecte matching een boog $(u_{out}, v_{in})$ gematcht is, dan moeten de andere overeenkomende bogen van de cyclus in $G$ ook gematcht worden.
-\end{lemma}
-
-\begin{lemma}
-    Er zijn geen negatieve cycli in $G$ als en slecht als $c(G') = 0$.
-\end{lemma}
-
-\begin{lemma}
-    Als $G$ één of meerdere negatieve cycli heeft dan is de minimale perfecte matching in $G'$ negatief.
+    Als in een perfecte matching in $G'$ een boog $(u_{out}, v_{in})$ gematcht is, dan moeten de andere bogen van de corresponderende deelmatching van een cyclus met $(u, v)$ uit $G'$ ook gematcht zijn.
 \end{lemma}
 \begin{proof}
-    Neem een negatieve cyclus uit $G$ en noem deze $\gamma$. Noem de verzameling overeenkomende knoopgangbogen in $G'$ $\gamma'$. Match alle knopen in $G' - \gamma$ waardoor $c(G') = 0$. Voor alle bogen $(u, v)$ uit $\gamma$, match $(u'_{out}, v'_{in})$. Hierdoor is de matching perfect en is $c(G') < 0$.
+    Als $(u\vout,  v\vin)$ gematcht is dan moeten de knopen $v\vout$ en $u\vin$ ook nog gematcht worden. De knoop $v\vout$ moet nu gematcht worden met een $w\vin$, waarna $w\vout$ nog gematcht moet worden. Hetzelfde geldt voor $u\vin$. Dit moet gematcht worden met een $t\vout$ zodat $t\vin$ gematcht moet worden, enzoverder. Uiteindelijk moeten een $a\vin$ en een $z\vout$ gematcht worden, waardoor er een corresponderende deelmatching voor een cyclus in $G$ bestaat.
 \end{proof}
 
+
+\begin{lemma}
+    Zij $M$ een minimale perfecte matching in $G'$. Er zijn geen negatieve cycli in $G$ als en slecht als $c(M) = 0$.
+\end{lemma}
+\begin{proof}
+    Stel dat $G$ geen negatieve cycli bevat. Als $M$ een corresponderende deelmatching $M_{part}$ van een cylus in $G$ bevat dan is $c(m_{part} > 0$. In dit geval is het beter om alle knoopgangbogen van gewicht $0$ te matchen. Hierdoor zal $M$ geen enkele corresponderende deelmatchings bevaten zodat $c(M) = 0$ als $G$ geen negatieve cycli heeft.
+    Stel dat $c(M)$ negatief is dan bevat $M$ een corresponderende deelmatching die negatief is. Hierdoor moet $G$ een negatieve cyclus hebben.
+\end{proof}
+
+\subsection{Optimale duale variabelen}
+De output van het matching algoritme is een 1-optimal matching $(y,M)$. Dit is echter net niet wat we nodig hebben voor onze laatste stap. Voor onze laatste stap hebben we een optimal matching nodig. Dit lijkt erg op de 1-optimal matching maar in de plaats van $u.y + v.y \leq w(u, v) + 1$ hebben we $u.y + v.y \leq w(u, v)$ nodig. Deze omzetting is mogelijk in $\mathcal{O}(\card{E})$ tijdscomplexiteit.
+
+\begin{algorithmm}
+    
+\end{algorithmm}
+
+\subsection{Omzetten van gewichten}
 Voer het vorige algoritme uit op $G'$ en neem hier de optimal matching $(y, M)$ uit.
 
 \begin{lemma}
-    Voor alle knopen $v$ uit $G$ geldt dat $v'_{in}.y = -v'_{out}.y$.
+    Voor alle knopen $v$ uit $G$ geldt dat $v_{in}.y = -v_{out}.y$ in $G'$.
 \end{lemma}
 \begin{proof}
     De boog $(v'_{in}, v'_{out})$ heeft een gewicht van $0$ dus als deze gematcht is dan geldt $v_{in}' = -v_{out}'$. Stel dat deze boog niet gematcht is, dan maken $v'_{in}$ en $v'_{out}$ deel uit van dezelfde cyclus. Het gewicht van deze cyclus is $0$ dus voor een cyclus $(u, w, ..., y, u)$ is $u_{out}.y + w_{in}.y + \dots + y_{out}.y + u_{in}.y = 0$ Omdat de matching optimal is geldt ook $v_{out} + v_{in} \leq w(v_{out}, v_{in}) = 0$. Alles samen moet dus $v_{out} = -v_{in}$.
 \end{proof}
 
-Dan hier het laatste algoritme om het kortste pad te berekenen.
+\begin{definition}[Dominerende functie]
+    De dominerende functie $d: V \longrightarrow \mathbb{Z}$ is een toekenning van waarden aan knopen uit $G$. We noteren $d(v)$ als $v.d$ geven $v.d$ als waarde $v\in$.
+\end{definition}
 
-\begin{algorithmm}
-    Bouw een nieuwe graaf $G'$ van $G$ en laat hier het minimale perfecte matching algoritme over lopen zodat er een matching en duale variabelen uitkomen. Deel de duale variabelen van de laatste iteratie van het vorige algoritme door $n - 1$. Als de matching een negatief gewicht heeft, stop dan, de originele graaf heeft een negatieve cyclus. Stel nu voor elke knoop $v$ uit $G.V$ de duale variabele van deze knoop gelijk aan de duale variabele van de corresponderende "uitgangsknoop" uit $G'$. Elke knoop $v$ uit $G.V$ heeft nu een duale variabele $v.y$. Transformeer nu het gewicht van alle bogen met de duale variabelen 
-\end{algorithmm}
+\begin{definition}[$w'(u, v)$]
+    Geef elke boog $(u, v)$ uit $G$ een nieuw gewicht $w'(u, v)$ dat gelijk is aan $w(u, v) + u.d - v.d$.
+\end{definition}
+
+\begin{lemma}
+    $\forall (u, v) \in G: w'(u, v) \geq 0$.
+\end{lemma}
+\begin{proof}
+    $$u\vout + v\vin \leq w(u, v)$$
+    $$v\vin - u\vin \leq w(u, v)$$
+    $$v.d - u.d \leq w(u, v)$$
+    $$w(u, v) + u.d - v.d \geq 0$$
+    $$w'(u, v) \geq 0$$
+\end{proof}
+
+\begin{lemma}
+    Het gebruik van de nieuwe gewichten $w'$ in de plaats van $w$ veranderd niets aan de knopen van de kortste paden.
+\end{lemma}
+\begin{proof}
+    Dit bewijs is gelijkaardig aan dat van \ref{proof:gabow:cancel}. Zij $p = (s_0, a, b, \dots, z, v)$ dan geldt.
+    \begin{gather*}
+        w'(p) \\
+        = w(s_0, a) + s_0.d - a.d + w(a, b) + a.d - b.d\\
+        + \dots + w(z, v) + z.d - v.d\\
+        = w(p) + s_0.d - v.d
+    \end{gather*}
+    Aangezien elke pad van $s_0$ naar $v$ de $d$-variabelen mee in rekening neemt voor het gewicht ervan blijven de gewichten van de paden relatief gezien hetzelfde.
+\end{proof}
+
+\begin{theorem}
+    Het single-source kortste pad probleem in een graaf met negatieve gewichten kan opgelost worden in $\mathcal{O}(\card{E} \cdot \sqrt{\card{V}} \cdot \log(\card{V} \cdot W))$ tijdscomplexiteit.
+\end{theorem}
+\begin{proof}
+    Bouw in $\mathcal{O}(\card{E})$ tijdscomplexiteit een nieuwe graaf $G'$ van $G$ en laat hier het minimale perfecte matching algoritme over lopen zodat er een matching en duale variabelen uitkomen. Als de matching een negatief gewicht heeft, stop dan, de originele graaf heeft een negatieve cyclus. Pas nu een tweede algoritme toe om de optimale duale variabelen te verkrijgen. Definieer met behulp van die duale variabelen in $\mathcal{O}(\card{E})$ nieuwe gewichten $w'$ zoals hierboven beschreven en pas een single-source kortste pad algoritme voor grafen met positieve gewichten toe.
+\end{proof}
+
+\begin{remark}
+    Aangezien met de nieuwe gewichten $w'$ het gewicht van ieder pad zich relatief ten opzichte van elkaar blijft behouden kan bovenstaande techniek voor het omzetten van gewichten ook gebruikt worden voor het all-pairs kortste-pad probleem.
+\end{remark}
 
 \section{Vergelijking van de verschillende algoritmen}
 De complexiteit van het algoritme van Dijkstra is $\mathcal{O}(\card{V} \cdot \log(\card{V}) + \card{E}^2)$ terwijl de positieve scaling van Gabow $\mathcal{O}(\card{E} \cdot \log{W})$ is (herinner: $W$ is het grootste gewicht uit de graaf). Welk algoritme is nu beter? Dat hangt er nu juist van af. Ervan uitgaande dat de input groot is en de grootte van de input ook op voorhand geweten kan je $\card{E} \cdot \log(W)$ vergelijken met $\card{V} \cdot \log{\card{V}}$. Als dit niet mogelijk is dan kan ook altijd $\log(W)$ met $\log(\card{V})$ vergeleken worden. Als $\log(W)$ groter is dan moet Dijkstra beter zijn, omdat $\card{E}$ altijd groter is dan $\card{V} - 1$. Een voorbeeld waarbij dat $W$ klein is ten opzichte van $\card{V}$ is het wegennet. Bovendien is hier $\card{E} \ll \card{V}^{2}$. Gabow's scaling zou dus een kandidaat kunnen zijn voor kortste paden. Praktisch gezien is het waarschijnlijk beter om Dijkstra te gebruiken omdat dit meer geïmplementeerd is dan Gabow. \cite{BGL}
-Naast Dijkstra en Gabow hebben we nog een derde algoritme gezien om kortste paden te vinden, dit van Bellman-Ford. Dit algoritme doet qua tijdscomplexiteit erg onder voor de twee anderen maar heeft als voordeel dat het ook met negatieve gewichten werkt. Als we er dus zeker van kunnen zijn dat de graaf enkel positieve gewichten bevat en de efficiëntie doet ertoe dan kan dus beter voor één van de twee anderen gegaan worden. Een andere optie voor het zoeken van kortste paden is het omzetten van negatieve gewichten naar positieve gewichten.
+Naast Dijkstra en Gabow hebben we nog een derde algoritme gezien om kortste paden te vinden, dit van Bellman-Ford. Met een tijdscomplexiteit van $\card{E} \cdot \card{V}$ doet dit algoritme erg onder voor de twee anderen maar heeft als voordeel dat het ook met negatieve gewichten werkt. Als we er dus zeker van kunnen zijn dat de graaf enkel positieve gewichten bevat en de efficiëntie doet ertoe dan kan dus beter voor één van de twee anderen gegaan worden. Een andere optie voor het zoeken van kortste paden is het omzetten van negatieve gewichten naar positieve gewichten. Dit is veel complexer maar meestal wel efficiënter dan Bellman-Ford met een complexiteit van $\card{E} \cdot \sqrt{\card{V}} \cdot \log(\card{V} \cdot W)$. \say{Meestal} wilt hier zeggen zolang $\log(\card{V} \cdot W) < \sqrt{\card{V}}$ of met andere woorden $\log(W) < \sqrt{\card{V}} - \log(\card{V})$. Omdat in grote netwerken $\log(\card{V}) \ll \sqrt{\card{V}}$ kunnen we stellen dat $\log(W) < \sqrt{\card{V}}$ moet zijn. Om dit in context te plaatsen, voor een graaf met 10000 knopen mag het grootste gewicht $2^{100} = 1.26*10^{30}$ zijn. Voor grote grafen is het in de meeste toepassingen dus efficiënter om de gewichten eerst om te zetten via matching.
+Het toepassen van algoritmen die met negatieve gewichten kunnen omgaan is nog altijd geen goed idee met het laatste algoritme, want $\card{E} \cdot \card{V} > \card{V} \cdot \log(V)$ en $\card{E} \cdot \log(W)$ zal altijd kleiner blijven dan $\card{E} \cdot log(\card{V} \cdot W)$.
+Het top algoritme voor grafen met negatieve gewichten is...
+%TODO: geef de paper van wulf-nilsen et al mee
 
 
 \section*{Conclusies}
 De aanzet van deze literatuurstudie was de paper \say{Negative-Weight Single-Source Shortest Paths in Near-linear Time} \cite{bernstein2023negativeweight}. Dit algoritme heeft als input gehele getallen (positief of negatief) en berekent de kortste paden in $\mathcal{O}(\card{E} \cdot \log(\card{V}) \cdot \log(W))$, wat de laagste complexiteit van minimale perfecte matching op volledige bipartiete grafen doorbreekt. Zoals duidelijk geworden in deze paper ben ik daar niet toe geraakt, vooral het laatste algoritme doorgronden heeft heel veel tijd in beslag genomen, wat niet wilt zeggen dat de andere 3 allemaal heel gemakkelijk zijn. Het bewijs voor het algoritme van Dijkstra is redelijk tricky en heeft me een aantal iteraties gekost. Scaling met positieve gewichten heeft ook een aantal iteraties nodig gehad om te begrijpen.
 
 Omdat een blik op de paper \cite{Scaling} en \cite{FasterScaling} leert dat de algoritmen daar gebaseerd zijn op het Hungarian algoritme heb ik dat eerst proberen te doorgronden aan de hand van het boek \say{Combinatorial Optimization: Algorithms and Complexity} \cite{combinatorialOptimization}. Dit boek legt het algoritme wel uit, maar pas in de latere hoofdstukken waardoor het het algoritme kan uitleggen aan de hand van lineair programmeren. Na hier een aantal weken mee bezig te zijn geweest zijn we tot de conclusie gekomen dat er te weinig tijd is om zo in detail te kunnen treden dus heb ik de algoritmen uit \cite{Scaling} en \cite{FasterScaling} direct proberen te doorgronden. Dit heeft tijd gekost, maar zoals hierboven te zien is heb ik het wel op een lager niveau uitgelegd gekregen. Het is niet alleen uitgebreider uitgelegd, de informatie is afgestemd op wat nodig is voor het algoritme en de structuur volgt meer de andere algoritmen uit de paper.
+
+Er is één ding waardat ik niet genoeg aandacht aan heb besteed en dat is de plaatscomplexiteit van de verschillende algoritmen. Dit neem ik mee naar de masterproef.
 
 Ik heb geleerd dat het niet altijd gemakkelijk is om je hoofd bij de theoretische concepten te houden en dat het ook veel tijd in beslag neemt om algoritmen van voor tot achter te bestuderen en uit te schrijven.
 
