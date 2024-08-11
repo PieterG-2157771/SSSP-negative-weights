@@ -25,6 +25,7 @@
 \newtheorem{theorem}{Stelling}[section]
 \newtheorem{lemma}{Lemma}[section]
 \newtheorem{nonLemma}{Non-lemma}[section]
+\newtheorem{corollary}{Corollarium}[section]
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definitie}[section]
@@ -93,7 +94,8 @@ De appendix voorziet enkele eenvoudige stellingen en hun bewijs waarnaar wordt v
 Het onderzoek naar het algoritme van Dijkstra en Bellman-Ford komt uit de 4\textsuperscript{de} editie van het boek \say{Introduction to Algorithms} \cite{Introduction}.
 
 \section{Conventies}
-De knoop $s_0$ wordt altijd gebruikt om de bronknoop aan te duiden. Het andere deel van de input, de graaf, wordt genoteerd als $G = (V, E)$ waarbij dat $V$ de knopen van de graaf voorstelt en $E$ de bogen. Met $\card{V}$ en $\card{E}$ wordt respectievelijk het aantal knopen en het aantal bogen van de graaf bedoeld. In deze paper zijn bogen uit $E$ altijd gericht en worden ze aangeduid met $e$ of $(u, v)$ (de boog van knoop $u$ naar knoop $v$). Als er toch een ongerichte boog nodig is tussen twee knopen $u$ en $v$ kan deze worden aangeduid met twee gerichte bogen $(u, v)$ en $(v, u)$. Voor elke boog $e$ of $(u, v)$ stelt $w(e)$ of $w(u, v)$ het gewicht van die boog voor. In deze paper wordt altijd aangenomen dat $w(e) \in \mathbb{Z}$.
+De knoop $s_0$ wordt altijd gebruikt om de bronknoop aan te duiden. % Vraag: moet dit erin, of moet dat gewoon aan het begin van elk algoritme/elke keer gebruikt aangegeven worden?
+Het andere deel van de input, de graaf, wordt genoteerd als $G = (V, E)$ waarbij dat $V$ de knopen van de graaf voorstelt en $E$ de bogen. Met $\card{V}$ en $\card{E}$ wordt respectievelijk het aantal knopen en het aantal bogen van de graaf bedoeld. In deze paper zijn bogen uit $E$ altijd gericht en worden ze aangeduid met $e$ of $(u, v)$ (de boog van knoop $u$ naar knoop $v$). Als er toch een ongerichte boog nodig is tussen twee knopen $u$ en $v$ kan deze worden aangeduid met twee gerichte bogen $(u, v)$ en $(v, u)$. Voor elke boog $e$ of $(u, v)$ stelt $w(e)$ of $w(u, v)$ het gewicht van die boog voor. In deze paper wordt altijd aangenomen dat $w(e) \in \mathbb{Z}$.
 Een pad is een aaneenschakeling van knopen via bogen uit de graaf en een simpel pad is een pad waarin geen twee knopen hetzelfde mogen zijn. Paden worden aangeduid met $p$ of $(u, \dots, w)$. Het gewicht van een pad $p$ is gedefinieerd als $\sum\{w(e) \mid e \in p\}$ en wordt ook hier weer aangeduid met $w(p)$. Als laatste stelt $\delta(u, v)$ het gewicht van het kortst mogelijke pad van $u$ naar $v$ voor. Stel dat er geen pad bestaat tussen $u$ en $v$ dan is $\delta(u, v)$ per conventie $+ \infty$.
 
 \section{Concepten en eigenschappen}
@@ -114,44 +116,49 @@ Drie van de vier algoritmen voor kortste paden uit deze paper maken rechtstreeks
 De relax functie neemt als input een boog $(u, v)$ en verandert eventueel de $\pi$- en $d$-waarden van de knoop $v$. Stel dat $v.d \geq u.d + w(u, v)$ dan is er zojuist een korter pad gevonden en verandert $v.d$ naar $u.d + w(u, v)$ en $v.\pi$ naar $u$. Anders wordt er niets veranderd.
 
 \section{Dijkstra}
-\subsection{Algoritme: initialisatie}
-Neem als input een graaf $G = (V, E)$ en een bronknoop $s_0$. De gewichten van de bogen in E zijn uitsluitend positief. Definieer een verzameling $S$ en een verzameling $D$. De verzameling $S$ zal alle knopen bevatten waarvan we zeker zijn een kortste pad en bijhorend gewicht te hebben gevonden. De verzameling $D$ is op elk moment het complement van de verzameling $S$ in de ruimte $V$, dus: $D = V - S$. Definieer als laatst voor elke knoop $s \in V$ een variabele $\pi$ and $d$. Beiden worden gebruikt om tijdens het algoritme informatie over het tot dan toe best gekende kortste pad naar $s_0$ op te slaan. Om dit pad te kunnen opslaan is $\pi$ een pointer naar een andere knoop en $d$ het gewicht van dit pad.
+\subsection{Algoritme: initialisatie en context}
+Neem als input een graaf $G = (V, E)$ en een bronknoop $s_0$. De gewichten van de bogen in E zijn uitsluitend positief. Definieer een verzameling $S$ en een verzameling $D$. De verzameling $S$ zal alle knopen bevatten waarvan we zeker zijn een kortste pad en bijhorend gewicht te hebben gevonden. De verzameling $D$ is dan voor alle knopen waarvoor we nog geen kortste pad en gewicht hebben, dus: $D = V - S$. Definieer als laatst voor elke knoop $s \in V$ een variabele $\pi$ and $d$ zoals beschreven in \ref{concepts:relax}.
 
-Wanneer het algoritme begint weten we nog niets over eender welk kortste pad, met als enige uitzondering dat het kortste pad van $s_0$ naar $s_0$ $0$ is. De verzameling $S$ wordt dus met de knoop $s_0$ geïnitialiseerd en $s_{0}.d = 0$ en $s_{0}.\pi = s_0$. Aangezien $D + S = V$ initialiseren we $D$ met alle knopen in $V$ op $s_0$ na. Omdat er in de beginsituatie nog niets gekend is over eender welk pad wordt $nil$ als lege pointer gebruikt en $\infty$ als onbekend pad. Dus: $\forall v \in D: v.\pi = nil,\ v.d = \infty$.
+Het enige wat we aan het begin van het algoritme weten is dat we moeten vertrekken van de bronknoop $s_0$. De verzameling $S$ wordt dus met de knoop $s_0$ geïnitialiseerd en $s_{0}.d = 0$ en $s_{0}.\pi = root$. Over alle andere knopen weten we nog niets dus $D = V - {s_0}$ en $\forall v \in D: v.\pi = nil,\ v.d = \infty$.
 
 \subsection{Algoritme: iteratie}
-Neem de laatst toegevoegde knoop aan $S$ en benoem deze $s_l$. Relax nu elke boog $b$ die vanuit $s_l$ vertrekt. Voor de relax functie wordt verwezen naar \ref{concepts:relax}. Na het relaxen wordt er in de verzameling $D$ gezocht naar de knoop met de laagste $d$-waarde. Noem deze knoop $s_l$. Knoop $s_l$ wordt uit $D$ verwijderd en aan $S$ toegevoegd, waarna we terug opnieuw kunnen beginnen. Dit wordt herhaald totdat $D$ leeg is.
+Neem de laatst toegevoegde knoop aan $S$ en benoem deze $s_l'$. Relax nu elke boog $b$ die vanuit $s_l'$ vertrekt. Voor de relax functie wordt verwezen naar \ref{concepts:relax}. Na het relaxen wordt er in de verzameling $D$ gezocht naar de knoop met de laagste $d$-waarde. Noem deze knoop $s_l$. Knoop $s_l$ wordt uit $D$ verwijderd en aan $S$ toegevoegd, waarna we terug opnieuw kunnen beginnen. Dit wordt herhaald totdat $D$ leeg is.
 
 \subsection{Correctheid: intuïtief}
-Het pad naar $s_l$ moet via de knopen in $S$ gaan. Het pad naar $s_l$ heeft namelijk het laagste gewicht van alle knopen in $D$ en \emph{alle bogen hebben een positief gewicht}. Een pad dat niet via de knopen in $S$ gaat is dus geen kortste pad. Daarnaast zijn alle paden van $s_0$ naar $s_l$ via de knopen van $S$ nagegaan, omdat de boog van elk van deze knopen naar zijn buren gerelaxt is geweest. De $d$- en $\pi$-waarde worden enkel veranderd als er een korter pad wordt gevonden. Daarom dat we er zeker van kunnen zijn dat $s_l.d = \delta(s_0, s_l)$ en het kortste pad aangegeven wordt door de $\pi$-waarden.
+Het eerste om in te zien is dat het kortste pad naar $s_l$ uitsluitend via knopen uit $S$ gaat, en wel via het pad zoals aangegeven door de $\pi$-variabelen. Dit om twee redenen: $s_l.d$ is minimaal in $D$ en alle gewichten van alle andere bogen zijn positief. Een pad via andere bogen dan aangegeven via de $\pi$-waarden zal dus áltijd langer zijn.
 
 \subsection{Correctheid: formeel}
 \begin{proof}
-De initiële toestand van $S$ bevat enkel knopen waarvoor er een kortste pad bestaat. De enige knoop die namelijk in $S$ zit is $s_0$. Het kortste pad van $s_0$ naar $s_0$ is $0$ --- en kan ook niet lager zijn dan $0$ want alle gewichten zijn positief --- en dit zijn ook de waarden van respectievelijk $s_0.\pi$ en $s_0.d$.
-
-Voor de inductieve stap moeten we bewijzen dat als alle knopen in $S$ het correcte kortste pad hebben, we vanuit de laatst toegevoegde knoop relaxen en dan de knoop met de laagste $d$-waarde uit $D$ in $S$ stoppen, alle knopen in $S$ nog altijd het correcte kortste pad hebben. Met andere woorden: voor elke $s_l$ toegevoegd aan S geldt op dat moment $s_l.d = \delta(s_0, s_l)$.
+De initiële toestand van $S$ bevat enkel knopen waarvoor er een kortste pad bestaat. De enige knoop die namelijk in $S$ zit is $s_0$. Voor de inductieve stap moeten we bewijzen dat voor elke $s_l$ toegevoegd aan S geldt dat $s_l.d = \delta(s_0, s_l)$.
 
 Stel dat er een of meerdere kortste paden van $s_0$ naar $s_l$ zijn, neem dan één van deze kortste paden en benoem deze $p$. Definieer nu een nieuwe knoop $y \in p$ zodat $y$ de eerste knoop op het pad $p$ is dat niet meer in $S$ zit. De knoop $y$ kan eender welke knoop zijn, dus ook $s_l$. Stel nu de voorganger van $y$ als $x$. Aangezien $y$ de eerste knoop niet meer in $S$ is, geldt voor $x$ wel dat $x \in S$. Opnieuw kan $x$ eender welke knoop zijn, inclusief de startknoop $s_0$.
 
-Over de knopen $y$ en $s_l$ kan nu een aantal dingen gezegd worden. Zo komt $y$ niet later voor op $p$ dan $s_l$, is $p$ een kortste pad en zijn de gewichten van de bogen niet negatief zodat $\delta(s_0, y) \leq \delta(s_0, s_l)$. Daarnaast kan gesteld worden dat $s_l.d \leq y.d$ want (één van) de kleinste $d$-waarde uit de verzameling knopen $D$ was die van $s_l$, niet die van $y$. Het pad $p$ is een kortste pad dus is het deelpad van $(s_0, y)$ ook een kortste pad, $x \in S$ dus $x.d = \delta(s_0, x)$ en de boog $(x, y)$ is gerelaxt. Daardoor kunnen we er zeker van zijn dat $y.d = \delta(s_0, y)$. Samengevat:
+Over de knopen $y$ en $s_l$ kan nu een aantal dingen gezegd worden. Zo komt $y$ niet later voor op $p$ dan $s_l$, is $p$ een kortste pad en zijn de gewichten van de bogen niet negatief zodat $\delta(s_0, y) \leq \delta(s_0, s_l)$. Daarnaast kan gesteld worden dat $s_l.d \leq y.d$ want (één van) de kleinste $d$-waarden uit de verzameling knopen $D$ was die van $s_l$, niet die van $y$. Het pad $p$ is een kortste pad dus is het deelpad van $(s_0, y)$ ook een kortste pad, hierdoor is $y.d = \delta(s_0, y)$. Samengevat:
 
 \[\delta(s_0, y) \leq \delta(s_0, s_l) \leq s_l.d \leq y.d\]
 en
-\[y.d = \delta(s_l, y)\]
+\[y.d = \delta(s_0, y)\]
 Dus:
 \[\delta(s_0, y) = \delta(s_0, s_l) = s_l.d = y.d\]
-Met als conclusie dat $\delta(s_0, s_l) = s_l.d$ en $s_l$ dus kan toegevoegd worden aan $S$.
+Met als conclusie dat $\delta(s_0, s_l) = s_l.d$ en $s_l$ dus toegevoegd kan worden aan $S$.
 \end{proof}
 
+\begin{remark}
+    Technisch gezien is de stelling \say{Het algoritme van Dijkstra werkt niet met negatieve gewichten!} fout. De bogen die vanuit $s_0$ vertrekken mogen wel negatief zijn! (Op voorwaarde dat er geen negatieve cycli ontstaan.) Herinner dat we gezegd hebben dat het gewicht van alle ándere bogen positief moeten zijn, en dat we daarom $s_l$ kunnen toevoegen aan $S$, maar de bogen die vanuit $s_0$ vertrekken worden gerelaxt vóórdat er een knoop aan $S$ wordt toegevoegd (buiten $s_0$). Hierdoor kunnen die negatieve gewichten al geen roet meer in het eten gooien.
+\end{remark}
+
 \subsection{Complexiteit}
-Voor elke knoop $v$ uit $V$ worden alle uitgaande bogen gerelaxt. De som alle uitgaande bogen van alle knopen is $\mathcal{O}(\card{E})$. Relaxen kan gedaan worden in constante tijd. Nu moet alleen nog gekeken worden naar de efficiëntie van het zoeken naar de knoop met de laagste $d$-waarde in $D$. Je kan $D$ eenvoudigweg implementeren als een lijst en dan zou de worst-case tijdscomplexiteit voor éénmaal zoeken $\mathcal{O}(\card{V})$ zijn. De totale worst-case complexiteit is nu $\mathcal{O}(\card{E} + \card{V}^2)$.
-De snelste implementatie van Dijkstra is echter met een Fibonacci heap \cite{Fibonacci}, die als eerste gebruikt werd voor het algoritme van Dijkstra. Een Fibonacci heap is een heap die met een geamortiseerde zoektijd van $\mathcal{O}(\log(\card{V}))$ kan zoeken naar een laagste waarde in de heap en met een geamortiseerde constante tijd de waarden kan aanpassen. Een geamortiseerde tijdscomplexiteit betekent de gemiddelde tijdscomplexiteit over alle operaties heen. Het kan bijvoorbeeld zijn dat de eerste operatie wat langer duurt, maar dat de volgende operaties sneller gaan. De totale complexiteit van het zoeken naar de knoop met de laagste waarde in $D$ word dus $\mathcal{O}(\card{V} \cdot \log(\card{V}))$. De totale complexiteit van het algoritme van Dijkstra wordt dan $\mathcal{O}(\card{V} \cdot \log(\card{V}) + \card{E})$.
+Na elke knoop toegevoegd aan $S$ worden alle uitgaande bogen gerelaxt, waarna er gezocht wordt naar de volgende knoop met de laagste $d$-waarde. Het aanpassen van de $\pi$-waarden kan in constante tijd, maar de complexiteit voor het aanpassen van de $d$-waarden en het zoeken naar de laagste $d$-waarde hangen vast aan dezelfde datastructuur, die ook opgebouwd moet worden. Noem $f$ de complexiteit voor het bouwen van de datastructuur, $g$ voor het verlagen van één $d$-waarde en $h$ voor één keer zoeken naar de laagste $d$-waarde. De complexiteit voor één iteratie, dus tussen het toevoegen van twee knopen $s_l'$ en $s_l$ aan $S$, is dan $\mathcal{O}(\card{s_l'.adj} \cdot g + h)$ waarbij dat $s_l'.adj$ het aantal bogen vertrekkend van $s_l'$ voorstelt. Aangezien er tijdens elke iteratie exact één knoop wordt toegevoegd aan $S$ is de totale complexiteit nu $\mathcal{O}(f + \card{E} \cdot g + \card{V} \cdot h)$.
+
+Je kan de structuur achter $D$ eenvoudigweg implementeren als een lijst en dan zou $f$ $\mathcal{O}(\card{E})$ zijn, $g$ constant en $h$ worst- en average-case $\mathcal{O}(\card{V})$. De totale worst- en average-case tijdscomplexiteit is nu $\mathcal{O}(\card{E} + \card{V}^2)$. Kunnen we beter doen? We hebben een min-priority queue nodig die een zo goed mogelijke balans vind tussen de drie operaties \textit{make-heap}, \textit{pop-min} en \textit{decrease-key}. Voor het algoritme van Dijkstra is de beste implementatie van zo een queue een fibonacci heap \cite{Fibonacci}. Deze heap maakt de hele tijd gebruik van geamortiseerde tijdscomplexiteit voor zijn operaties. Een geamortiseerde tijdscomplexiteit is de gemiddelde tijd nodig over alle operaties heen. Het kan bijvoorbeeld zijn dat de eerste operatie wat langer duurt maar dat de volgende operaties sneller gaan, dat de eerste en laatste operaties sneller gaan dan de middelste operaties of nog iets helemaal anders. De fibonacci heap implementeert $f$ in $\mathcal{O}(\card{V})$, $g$ in geamortiseerde constante tijd en $h$ in geamortiseerd $\mathcal{O}(\log(\card{V}))$. Het bovenstaande invullen geeft dan $\mathcal{O}(\card{V} \cdot \log(\card{V}) + \card{E})$.
+
+
 
 \section{Gabow's scaling}
 De aanzet voor dit algoritme was \textit{problem 22-4} uit het boek \say{Introduction to Algorithms} \cite{Introduction}. Het algoritme komt origineel uit \say{Scaling algorithms for network problems} \cite{Scaling}.
-Dit algoritme maakt gebruik van het concept \textit{scaling}. Het concept bestaat erin de input in verschillende iteraties groter en groter te laten worden, totdat de laatste iteratie terug de input van het originele probleem heeft. Elke iteratie benaderd de oplossing van de volgende iteratie op zo een manier dat die iteratie de oplossing van de vorige iteratie kan gebruiken voor zijn eigen oplossing. Dit concept is nuttig wanneer individuele iteraties efficiënter zijn dan direct het hele probleem te berekenen en het aantal iteraties beperkt blijft.
+Dit algoritme maakt gebruik van het concept \textit{scaling}. Het concept bestaat erin de input in verschillende iteraties groter en groter te laten worden. Elke iteratie benadert de oplossing van de volgende iteratie op zo een manier dat die iteratie de oplossing van de vorige iteratie kan gebruiken voor zijn eigen oplossing. De laatste iteratie heeft dan de oplossing voor het originele probleem. Dit concept is nuttig wanneer individuele iteraties efficiënter zijn dan direct het hele probleem te berekenen en het aantal iteraties beperkt blijft. Een bekend algoritme dat gebruik maakt van dit concept is radix sort.
 
-In Gabow's algoritme voldoet een iteratie $n$ aan het berekenen van de kortste paden in de graaf waarvan dat enkel de $n$ meest significante bits voor de gewichten van de bogen in rekening worden genomen. Stel dat een boog een gewicht heeft van $38$, dan is dit in binaire representatie $100110$. In iteratie $2$ heeft deze boog een gewicht van twee omdat de twee meest significante bits $10$ zijn en in iteratie $5$ heeft deze boog een gewicht van $19$ omdat de vijf meest significante bits $10011$ zijn. Een getal $a$ heeft $\ceil{\log_2(a)}$ cijfers in de binaire representatie als het geen macht is van twee en $\log_2(a) + 1$ cijfers in de binaire representatie als het wel een macht is van twee. Stel dat $W$ het grootste gewicht van de graaf voorstelt, dan zal het aantal iteraties $k$ dus $\ceil{\log_2(W + 1)}$ zijn.
+In Gabow's algoritme voldoet een iteratie $n$ aan het berekenen van de kortste paden in de graaf waarvan dat enkel de $n$ meest significante bits voor de gewichten van de bogen in rekening worden genomen. Stel dat een boog een gewicht heeft van $38$, dan is dit in binaire representatie $100110$. In iteratie $2$ heeft deze boog een gewicht van twee omdat de twee meest significante bits $10$ zijn en in iteratie $5$ heeft deze boog een gewicht van $19$ omdat de vijf meest significante bits $10011$ zijn. Een getal $a$ heeft $\ceil{\log_2(a)}$ cijfers in de binaire representatie als het geen macht is van twee en $\log_2(a) + 1 = \ceil{\log_2(a + 1)}$ cijfers als het wel een macht is van twee. Stel dat $W$ het grootste gewicht van de graaf voorstelt, dan zal het aantal iteraties $k$ dus $\ceil{\log_2(W + 1)}$ zijn.
 
 \subsection{Iteratie n}
 $w_i(u, v)$ is het gewicht van de boog $(u, v)$ in de i\textsuperscript{de} iteratie van het algoritme.
@@ -163,18 +170,19 @@ $w_i(u, v)$ is het gewicht van de boog $(u, v)$ in de i\textsuperscript{de} iter
 \end{proof}
 
 \begin{lemma} \label{theorem:maxTheAmountOfVertices}
-    Voor elke knoop uit $V$ en alle $i \in [2, k]$ geldt $\delta_i(s_0) - 2 \cdot \delta_{i-1}(s_0, v) \leq \card{V} -1$.
+    Voor elke knoop uit $V$ en alle $i \in [2, k]$ geldt $\delta_i(s_0, v) - 2 \cdot \delta_{i-1}(s_0, v) \leq \card{V} -1$.
 \end{lemma}
-
 \begin{proof}
-    De kardinaliteit van het kortste pad is kleiner dan of gelijk aan $\card{V} - 1$. Hierdoor komen er ook hoogstens $\card{V} - 1$ gevallen voor waarbij dat $w(e_i) = 2 \cdot w(e_{i-1}) + 1$ in de plaats van $w(e_i) = 2 \cdot w(e_{i-1})$.
+    De kardinaliteit van het kortste pad is kleiner dan of gelijk aan $\card{V} - 1$ (\ref{appendix:amountOfEdgesInShortestPath}). Hierdoor komen er op het kortste pad ook hoogstens $\card{V} - 1$ gevallen voor waarbij dat $w(e_i) = 2 \cdot w(e_{i-1}) + 1$ in de plaats van $w(e_i) = 2 \cdot w(e_{i-1})$.
 \end{proof}
 
-Definieer nu voor alle bogen $(u, v)$ uit $E$ en voor alle $i \in [2, k]$ een alternatief gewicht voor $w_i(u, v)$ als $\hat{w}_i(u, v) = w_i(u, v) + 2 \cdot \delta_{i-1}(s_0, u) - 2 \cdot \delta_{i-1}(s_0, v)$.
+\begin{definition}[$\hat{w}_i(e)$]
+    Definieer voor elke $i \in [2, k]$ en alle bogen $(u, v) \in E$ een alternatief gewicht voor $w_i(u, v)$ als $\hat{w}_i(u, v) = w_i(u, v) + 2 \cdot \delta_{i-1}(s_0, u) - 2 \cdot \delta_{i-1}(s_0, v)$.
+\end{definition}
+
 \begin{lemma}
     $\hat{w}_i(u, v)$ is altijd strikt positief
 \end{lemma}
-
 \begin{proof}
     Vanwege de driehoeksongelijkheid \ref{concepts:driehoeksongelijkheid} weten we dat
     \begin{displaymath}
@@ -184,68 +192,63 @@ Definieer nu voor alle bogen $(u, v)$ uit $E$ en voor alle $i \in [2, k]$ een al
     \begin{displaymath}
         2 \cdot \delta_{i-1}(s, v) \leq 2 \cdot \delta_{i-1}(s, u) + 2 \cdot w_{i-1}(u, v)
     \end{displaymath}
-    En wegens stelling 1 kunnen we dus stellen dat
-    \begin{gather*}
-        2 \cdot \delta_{i-1}(s, v) \leq 2 \cdot \delta_{i-1}(s, u) + w_i(u, v)\\
-        \Leftrightarrow\\
-        w_i(u, v) + 2 \cdot \delta_{i-1}(s, u) - 2 \cdot \delta_{i-1}(s, v) \geq 0
-    \end{gather*}
-\end{proof}
-
-
-$\hat{\delta}_i(u, v)$ is nu het kortste pad van $u$ naar $v$ met de alternatieve gewichten $\hat{w}_i(u, v)$.
-\begin{lemma} \label{theorem:deltaI}
-    $\delta_i(s_0, v) = \hat{\delta}_i(s_0, v) + 2 \cdot \delta_{i-1}(s_0, v)$
-\end{lemma}
-
-\begin{proof} \label{proof:gabow:cancel}
-    Begin met de definitie van $\hat{\delta}_i(s_0, v)$. $\hat{\delta}_i(s_0, v)$ is het kortste pad $p$ van knoop $s_0$ naar $v$. Dit pad p bestaat uit 1 of meerdere bogen die telkens 2 knopen verbinden. $p$ is dus bijvoorbeeld een pad $s_0, w, x, \dots, a, b, c, \dots, y, z, v$ en het gewicht van dit pad zal dus ook de optelling zijn van alle alternatieve gewichten die de verschillende knopen verbinden:
-    \begin{gather*}
-        \hat{\delta}_i(s_0, v) = \\
-        \hat{w}_i(s_0, w) + \hat{w}_i(w, x) + \dots + \\
-        \hat{w}_i(a, b) + \hat{w}_i(b, c) + \dots + \\
-        \hat{w}_i(y, z) + \hat{w}_i(z, v)
-    \end{gather*}
-    Het uitbreiden van deze $\hat{w}_i$'s geeft
-    \begin{gather*}
-        \hat{\delta}_i(s_0, v) = \\
-        w_i(s_0, w) + 2\, \delta_{i-1}(s_0, s_0) - 2\, \delta_{i-1}(s_0, w)\ + \\
-        w_i(w, x) + 2\, \delta_{i-1}(s_0, w) - 2\, \delta_{i-1}(s_0, x)\ + \\
-        \dots\ + \\
-        w_i(a, b) + 2\, \delta_{i-1}(s_0, a) - 2\, \delta_{i-1}(s_0, b)\ + \\
-        w_i(b, c) + 2\, \delta_{i-1}(s_0, b) - 2\, \delta_{i-1}(s_0, c)\ + \\
-        \dots\ + \\
-        w_i(y, z) + 2\, \delta_{i-1}(s_0, y) - 2\, \delta_{i-1}(s_0, z)\ + \\
-        w_i(z, v) + 2\, \delta_{i-1}(s_0, z) - 2\, \delta_{i-1}(s_0, v)\ = \\
-        \delta_i(s_0, v) + 2\, \delta_{i-1}(s_0, u) - 2\, \delta_{i-1}(s_0, v)\ = \\
-        \delta_i(s_0, v) + 2\, \delta_{i-1}(s_0, s_0) - 2\, \delta_{i-1}(s_0, v)\ = \\
-        \delta_i(s_0, v) - 2\, \delta_{i-1}(s_0, v)
-    \end{gather*}
-    Zonder alle tussenstappen en herschreven geeft dit
+    En wegens \ref{scaling:doubleThePrevious} kunnen we dus stellen dat
     \begin{displaymath}
-        \delta_i(u, v) = \hat{\delta}_i(s_0, v) + 2 \cdot \delta_{i-1}(s_0, v)
+        2 \cdot \delta_{i-1}(s, v) \leq 2 \cdot \delta_{i-1}(s, u) + w_i(u, v)
+    \end{displaymath}
+    \begin{displaymath}
+        w_i(u, v) + 2 \cdot \delta_{i-1}(s, u) - 2 \cdot \delta_{i-1}(s, v) \geq 0
     \end{displaymath}
 \end{proof}
 
-We hebben nu een manier om $\delta_i$ te berekenen aan de hand van $\hat{\delta}_i$ en $\delta_{i-1}$, en $\hat{\delta}_i$ wordt berekend aan de hand van $w_i$ en $\delta_{i-1}$. Op deze manier gebruikt een iteratie $i$ de uitkomsten van iteratie $i-1$. Om het algoritme nu nog competitief te laten zijn met de andere algoritmen moet het berekenen van $\hat\delta$ ook nog snel kunnen gebeuren. De volgende stelling is hierbij belangrijk.
+\begin{definition}[$\hat{\delta}_i(e)$]
+    Voor elke $i \in [2, k]$ en alle bogen $(u, v) \in E$ is $\hat{\delta}_i(u, v)$ het gewicht van het kortste pad van $u$ naar $v$ met de alternatieve gewichten $\hat{w}_i$.
+\end{definition}
 
-\begin{theorem}
-    Voor alle $v$ uit $V$ en alle $i \in [2, k]$ geldt $0 \leq \hat{\delta_i}(s_0, v) \leq \card{E}$
-\end{theorem}
-\begin{proof}
-    $\hat{\delta}$ is positief want alle $\hat{w}$'s zijn ook positief. Stelling \ref{theorem:deltaI} anders geschreven geeft: $\hat{\delta}_{i-1}(s_0, v) = \delta_i(s_0) - 2 \cdot \delta_{i-1}(s_0, v)$. Wegens stelling \ref{theorem:maxTheAmountOfVertices} is $\delta_i(s_0) - 2 \cdot \delta_{i-1}(s_0, v) \leq \card{V} -1$. Daarnaast geldt dat $\card{E} \geq \card{V} - 1$ in eender welke graaf (zie \ref{appendix:aantalBogenInKortstePad}).
+\begin{lemma} \label{theorem:deltaI}
+    $\forall i \in [2, k], v \in V: \hat{\delta_i}(s_0, v) = \delta_i(s_0, v) - 2\, \delta_{i-1}(s_0, v)$
+\end{lemma}
+\begin{proof} \label{proof:gabow:cancel}
+    Zij $p = (s_0, a, b, \dots, z, v)$ een kortste pad van $s_0$ naar $v$ binnen een iteratie $i \in [2, k]$, dan geldt:
+    \begin{gather*}
+        \hat{\delta}_i(s_0, v)\\
+        =\ \hat{w}_i(s_0, a) + \hat{w}_i(a, b) +\ \dots\ + \hat{w}_i(z, v)\\
+        =\ w_i(s_0, a) + 2\, \delta_{i-1}(s_0, s_0) - 2\, \delta_{i-1}(s_0, a)\ +\\
+        w_i(a, b) + 2\, \delta_{i-1}(s_0, a) - 2\, \delta_{i-1}(s_0, b)\ +\\
+        \dots\ +\\
+        w_i(z, v) + 2\, \delta_{i-1}(s_0, z) - 2\, \delta_{i-1}(s_0, v)\\
+        =\ \delta_i(s_0, v) + 2\, \delta_{i-1}(s_0, s_0) - 2\, \delta_{i-1}(s_0, v)\\
+        =\ \delta_i(s_0, v) - 2\, \delta_{i-1}(s_0, v)
+    \end{gather*}
 \end{proof}
 
+\begin{corollary}
+    Het gebruik van $\hat{w}$ in de plaats van $w$ voor het berekenen van de kortste paden veranderd niets aan de knopen van de kortste paden zelf; het zijn nog altijd dezelfde knopen in dezelfde volgorde.
+\end{corollary}
+\begin{proof}
+    Eender welk kortste pad van $s_0$ naar $v$ moet $\delta_{i - 1}(s_0, v)$ in rekening nemen, samen met $\delta_i(s_0, v)$. De gewichten van de kortste paden blijven zich dus tot elkaar verhouden op dezelfde manier.
+\end{proof}
+
+We hebben nu een manier om $\delta_i$ te berekenen aan de hand van $\hat{\delta}_i$ en $\delta_{i-1}$, en $\hat{\delta}_i$ wordt berekend aan de hand van $w_i$ en $\delta_{i-1}$. Op deze manier gebruikt een iteratie $i$ de uitkomsten van iteratie $i-1$. Om het algoritme nu nog competitief te laten zijn met de andere algoritmen moet het berekenen van $\hat\delta$ ook nog snel kunnen gebeuren. De volgende stellingen zijn hierbij belangrijk.
+
+\begin{lemma}
+    Voor alle $v$ uit $V$ en alle $i \in [2, k]$ geldt $0 \leq \hat{\delta_i}(s_0, v) \leq \card{E}$
+\end{lemma}
+\begin{proof}
+    Het gewicht van eender welk pad $p$ met de gewichten $\hat{w}$ is positief want alle $\hat{w}'s$ zijn positief. Wegens stelling \ref{theorem:maxTheAmountOfVertices} is $\delta_i(s_0, v) - 2 \cdot \delta_{i-1}(s_0, v) \leq \card{V} -1$. Daarnaast geldt dat $\card{E} \geq \card{V} - 1$ in eender welke graaf (zie \ref{appendix:amountOfEdgesInShortestPath}).
+\end{proof}
+
+\begin{lemma}
+    Voor alle $v$ uit $V$ geldt $\delta(s_0, v) \leq \card{E}$.
+\end{lemma}
+\begin{proof}
+    In de eerste iteratie heeft elke boog een gewicht van 1 of 0. Ook $\delta_1$ kan dus hoogstens $\card{E}$ lang zijn.
+\end{proof}
+
+We kunnen het algoritme van Dijkstra versnellen door de vorige twee lemma's uit te buiten in onze datastructuur.
+
 \subsection{Dijkstra versneld}
-Er staat niet alleen een limiet van $\card{E}$ op $\hat{\delta}_i$ maar ook op $\delta_1$. In de eerste iteratie heeft elke boog een gewicht van 1 of 0. Ook $\delta_1$ kan dus hoogstens $\card{E}$ lang zijn. We kunnen deze aanname gebruiken om het algoritme van Dijkstra nog efficiënter te maken.
-
-Neem als input een graaf $G = (V, E)$ en een bronknoop $s_0$. Neem daarnaast als beperking dat $\forall e \in E: w(e) > 0$ en $\forall v \in V: \delta(s_0, v) \leq \card{E}$. Definieer een structuur $Q$ als een array geïndexeerd op 0 met grootte $\card{E} + 2$. Elk element in deze array heeft een lijst van knopen uit $V$ en in de hele structuur $Q$ komt elke knoop $v$ uit $V$ niet meer dan één keer voor. Initialiseer de lijst $Q[0]$ met $s_0$ en $Q[\card{E} + 1]$ met $V - s_0$. Definieer nu voor elke $v$ in $Q[\card{E} + 1]$ $v.\pi = nil$. Houd een pointer $p$ bij die naar een knoop in $Q$ wijst en initialiseer deze pointer met $s_0$.
-
-Pas nu een algoritme gelijkaardig aan dat van Dijkstra toe. Relax alle edges vertrekkend vanuit $p$. Als een $d$-waarde verandert, verplaats de knoop naar het einde van de lijst $Q[d]$. Verzet na het relaxen de pointer $p$ naar de eerstvolgende knoop in de lijst, en anders naar de eerste knoop van de eerstvolgende niet-lege lijst van $Q$. Herhaal tot $p$ niet meer verder kan.
-
-$Q$ en $p$ vervangen de rol van $S$ en $D$ uit het originele algoritme. Alles wat er in $Q$ zit voor en onder de pointer $p$ kan gezien worden als de verzameling $S$ en alles wat er achter de pointer $p$ zit kan gezien worden als de verzameling $D$. Het zoeken in $D$ wordt vervangen door simpelweg het verschuiven van de pointer $p$. Het enige wat er dus anders is aan het algoritme zijn de voorstellingen van $D$ en $S$ waardoor operaties efficiënter kunnen. Daarom wordt er voor de correctheid van het algoritme verwezen naar het bewijs van het originele algoritme.
-
-In dit algoritme kan het veranderen van de $d$-waarde in constante tijd. De enige complexiteit die er nu nog is, is het zoeken naar de knoop met de volgende laagste $d$-waarde. Dit kost in totaal $\card{V} + \card{E}$ stappen omdat alle knopen en alle lijsten in $Q$ in totaal één keer afgegaan moeten worden. De tijdscomplexiteit is dus $\mathcal{O}(E)$.
+Definieer een datastructuur $Q$ als een array van grootte $E + 2$. Elk element uit de array $Q$ heeft een gelinkte lijst van knopen. Voor een index $i$ uit de array stelt een knoop $v$ op die index voor dat $v.d = i$. Initialiseer $Q$ op leeg, behalve $Q[0]$, wat $s_0$ als eerste element heeft en $Q[E + 2]$, wat een gelinkte lijst is van $V \setminus \{s_0\}$. Het aanpassen van een $d$-waarde kan nu in constante tijd; haal de knoop weg uit de index waar hij zat en voeg de knoop vooraan in de nieuwe index toe. Het zoeken naar de volgende knoop met de laagste $d$-waarde is gewoon het verder afgaan van de array $Q$, wat in totaal $\mathcal{O}(\card{E} \cdot \card{V}) = \mathcal{O}(\card{E})$ stappen is. De functie $h$ uit het algoritme van Dijkstra kan dus in een geamortiseerde tijd van $\mathcal{O}(\card{E} \div \card{V})$. Het opbouwen van $Q$ is $\mathcal{O}(\card{E})$ dus de totale tijdscomplexiteit voor het algoritme van Dijkstra is nu $\mathcal{O}(\card{E} + \card{E} + \card{E}) = \mathcal{O}(\card{E})$.
 
 \subsection{Algoritme}
 Neem als input een graaf $G = (V, E)$ en een bronknoop $s_0$. De gewichten van $E$ zijn positieve, gehele getallen. Definieer een nieuwe graaf $G_1 = (V, E_1)$ waarbij dat alle gewichten van alle bogen in $E_1$ de waarde hebben van de meest significante bit van het gewicht van de corresponderende boog uit $E$. Bereken voor $G_1$ en $s_0$ de kortste paden $\delta_1(s_0, v)$ voor alle $v$ uit $V$ met behulp van het hierboven gegeven algoritme.
@@ -254,7 +257,7 @@ Voor de $i$\textsuperscript{de} iteratie, definieer $G_i = (V, E_i)$. $E_i$ zijn
 
 Itereer totdat de $k$\textsuperscript{de} iteratie afgerond is. De verkregen kortste paden geven het antwoord op het gegeven probleem.
 
-Er zijn $k = \log_2(W)$ iteraties van $\mathcal{O}(E)$ tijdscomplexiteit, dus de tijdscomplexiteit van scaling is $\mathcal{O}(E \cdot \log(W))$.
+Er zijn $k = \log_2(W)$ iteraties van $\mathcal{O}(\card{E})$ tijdscomplexiteit, dus de tijdscomplexiteit van scaling is $\mathcal{O}(\card{E} \cdot \log W)$.
 
 \section{Bellman-Ford}
 Zoals hierboven al is aangegeven werkt het onderstaande algoritme ook met negatieve gewichten.
@@ -594,7 +597,7 @@ De volgende lemma's gelden op eender welk moment tijdens het algoritme.
 \section{Omzetten van negatieve gewichten}
 Het volgende algoritme komt uit \cite{Scaling}, maar is aangepast aan het algoritme van hierboven.
 
-\subsection{Van $G$ naar $G'$}
+\subsection{Van G naar G'}
 Neem eender welke graaf $G$, construeer hieruit een corresponderende bipartiete graaf $G'$. Doe dit door voor iedere knoop $v$ twee knopen $v_{out}$ en $v_{in}$ aan $G'$ toe te voegen. Voeg $v_{out}$ toe aan $G'.V_{out}$ en $v_{in}$ aan $G'.V_{in}$. Voeg voor iedere boog $e = (u, v)$ uit $G$ een boog $e' = (u_{out}, v_{in})$ met hetzelfde gewicht aan $G'$ toe. Voeg als laatste ook bogen met gewicht $0$ tussen elke $v_in$ en $v_out$ toe.
 
 De verzameling knopen $G'.V_{out}$ komt als het ware overeen met de knoopdelen voor de uitgaande bogen in de originele graaf $G$ en $G'.V_{in}$ komt dan overeen met de knoopdelen voor de inkomende bogen. Daarom dat bogen $(u, v)$ in $G'$ altijd van index $u_{out}$ naar index $v_{in}$ gaan, en er kan gemakkelijk van het inkomende deel naar het uitgaande deel van de knoop worden gegaan door de boog met gewicht $0$ van index $in$ naar index $out$ van dezelfde knoop te volgen.
@@ -665,9 +668,11 @@ Voer het vorige algoritme uit op $G'$ en neem hier de optimal matching $(y, M)$ 
 \begin{proof}
     Dit bewijs is gelijkaardig aan dat van \ref{proof:gabow:cancel}. Zij $p = (s_0, a, b, \dots, z, v)$ dan geldt.
     \begin{gather*}
-        w'(p) \\
-        = w(s_0, a) + s_0.d - a.d + w(a, b) + a.d - b.d\\
-        + \dots + w(z, v) + z.d - v.d\\
+        w'(p) =\\
+        w(s_0, a) + s_0.d - a.d\ +\\
+        w(a, b) + a.d - b.d\ +\\
+        \dots\ +\\
+        w(z, v) + z.d - v.d\\
         = w(p) + s_0.d - v.d
     \end{gather*}
     Aangezien elke pad van $s_0$ naar $v$ de $d$-variabelen mee in rekening neemt voor het gewicht ervan blijven de gewichten van de paden relatief gezien hetzelfde.
@@ -681,11 +686,11 @@ Voer het vorige algoritme uit op $G'$ en neem hier de optimal matching $(y, M)$ 
 \end{proof}
 
 \begin{remark}
-    Aangezien met de nieuwe gewichten $w'$ het gewicht van ieder pad zich relatief ten opzichte van elkaar blijft behouden kan bovenstaande techniek voor het omzetten van gewichten ook gebruikt worden voor het all-pairs kortste-pad probleem.
+    Aangezien met de nieuwe gewichten $w'$ het gewicht van ieder pad zich relatief ten opzichte van elkaar behouden blijft kan bovenstaande techniek voor het omzetten van gewichten ook gebruikt worden voor het all-pairs kortste-pad probleem.
 \end{remark}
 
 \section{Vergelijking van de verschillende algoritmen}
-De complexiteit van het algoritme van Dijkstra is $\mathcal{O}(\card{V} \cdot \log(\card{V}) + \card{E}^2)$ terwijl de positieve scaling van Gabow $\mathcal{O}(\card{E} \cdot \log{W})$ is (herinner: $W$ is het grootste gewicht uit de graaf). Welk algoritme is nu beter? Dat hangt er nu juist van af. Ervan uitgaande dat de input groot is en de grootte van de input ook op voorhand geweten kan je $\card{E} \cdot \log(W)$ vergelijken met $\card{V} \cdot \log{\card{V}}$. Als dit niet mogelijk is dan kan ook altijd $\log(W)$ met $\log(\card{V})$ vergeleken worden. Als $\log(W)$ groter is dan moet Dijkstra beter zijn, omdat $\card{E}$ altijd groter is dan $\card{V} - 1$. Een voorbeeld waarbij dat $W$ klein is ten opzichte van $\card{V}$ is het wegennet. Bovendien is hier $\card{E} \ll \card{V}^{2}$. Gabow's scaling zou dus een kandidaat kunnen zijn voor kortste paden. Praktisch gezien is het waarschijnlijk beter om Dijkstra te gebruiken omdat dit meer geïmplementeerd is dan Gabow. \cite{BGL}
+De beste complexiteit van het algoritme van Dijkstra is $\mathcal{O}(\card{V} \cdot \log(\card{V}) + \card{E})$ terwijl de positieve scaling van Gabow $\mathcal{O}(\card{E} \cdot \log{W})$ is (herinner: $W$ is het grootste gewicht uit de graaf). Welk algoritme is nu beter? Dat hangt er nu juist van af. Ervan uitgaande dat de input groot is en de grootte van de input ook op voorhand geweten kan je $\card{E} \cdot \log(W)$ vergelijken met $\card{V} \cdot \log{\card{V}}$. Als dit niet mogelijk is dan kan ook altijd $\log(W)$ met $\log(\card{V})$ vergeleken worden. Als $\log(W)$ groter is dan moet Dijkstra beter zijn, omdat $\card{E}$ altijd groter is dan $\card{V} - 1$. Een voorbeeld waarbij dat $W$ klein is ten opzichte van $\card{V}$ is het wegennet. Bovendien is hier $\card{E} \ll \card{V}^{2}$. Gabow's scaling zou dus een kandidaat kunnen zijn voor kortste paden. Praktisch gezien is het waarschijnlijk beter om Dijkstra te gebruiken omdat dit meer geïmplementeerd is dan Gabow. \cite{BGL}
 Naast Dijkstra en Gabow hebben we nog een derde algoritme gezien om kortste paden te vinden, dit van Bellman-Ford. Met een tijdscomplexiteit van $\card{E} \cdot \card{V}$ doet dit algoritme erg onder voor de twee anderen maar heeft als voordeel dat het ook met negatieve gewichten werkt. Als we er dus zeker van kunnen zijn dat de graaf enkel positieve gewichten bevat en de efficiëntie doet ertoe dan kan dus beter voor één van de twee anderen gegaan worden. Een andere optie voor het zoeken van kortste paden is het omzetten van negatieve gewichten naar positieve gewichten. Dit is veel complexer maar meestal wel efficiënter dan Bellman-Ford met een complexiteit van $\card{E} \cdot \sqrt{\card{V}} \cdot \log(\card{V} \cdot W)$. \say{Meestal} wilt hier zeggen zolang $\log(\card{V} \cdot W) < \sqrt{\card{V}}$ of met andere woorden $\log(W) < \sqrt{\card{V}} - \log(\card{V})$. Omdat in grote netwerken $\log(\card{V}) \ll \sqrt{\card{V}}$ kunnen we stellen dat $\log(W) < \sqrt{\card{V}}$ moet zijn. Om dit in context te plaatsen, voor een graaf met 10000 knopen mag het grootste gewicht $2^{100} = 1.26*10^{30}$ zijn. Voor grote grafen is het in de meeste toepassingen dus efficiënter om de gewichten eerst om te zetten via matching.
 Het toepassen van algoritmen die met negatieve gewichten kunnen omgaan is nog altijd geen goed idee met het laatste algoritme, want $\card{E} \cdot \card{V} > \card{V} \cdot \log(V)$ en $\card{E} \cdot \log(W)$ zal altijd kleiner blijven dan $\card{E} \cdot log(\card{V} \cdot W)$.
 Het top algoritme voor grafen met negatieve gewichten is...
@@ -715,7 +720,7 @@ Ik zou graag professor Jan Van den Bussche bedanken voor zijn hulp in de vorm va
 \begin{proof}
     Een boom $T = (V, E)$ heeft $\card{V} - 1$ bogen; er is een wortel en voor elke andere knoop in de boom moet er ook een boog zijn. Als een boog wordt weggehaald dan zijn er 2 bomen, die allebei aan de stelling voldoen. Stel dat er een knoop wordt toegevoegd dan geldt de stelling zeker.
 \end{proof}
-\begin{theorem} \label{appendix:aantalBogenInKortstePad}
+\begin{theorem} \label{appendix:amountOfEdgesInShortestPath}
     Een kortste pad in een graaf zonder negatieve cycli is een simpel pad en de kardinaliteit is kleiner dan of gelijk aan $\card{V} - 1$.
 \end{theorem}
 \begin{proof}
